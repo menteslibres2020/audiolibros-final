@@ -58,8 +58,16 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
 
                 {error && (
                     <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-start gap-3">
-                        <i className="fa-solid fa-circle-exclamation text-red-500 mt-1"></i>
-                        <p className="text-xs text-red-600 font-bold">{error}</p>
+                        <i className="fa-solid fa-circle-exclamation text-red-500 mt-1 shrink-0"></i>
+                        <div className="space-y-1">
+                            <p className="text-xs text-red-600 font-bold">{error}</p>
+                            {(error.includes('Failed to fetch') || error.includes('placeholder')) && (
+                                <p className="text-[10px] text-red-500 font-medium">
+                                    <strong>Posible causa:</strong> Variables de entorno no configuradas en Cloudflare Pages.<br />
+                                    Asegúrate de agregar <code>VITE_SUPABASE_URL</code> y <code>VITE_SUPABASE_ANON_KEY</code> en Settings &gt; Environment variables.
+                                </p>
+                            )}
+                        </div>
                     </div>
                 )}
 
