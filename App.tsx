@@ -59,13 +59,6 @@ const App: React.FC = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('status') === 'success') {
-          setIsPro(true);
-          window.history.replaceState({}, document.title, "/");
-          alert("¡Bienvenido a PRO! Gracias por suscribirte.");
-        }
-
         const saved = await persistenceService.loadState();
         if (saved.text !== undefined) setText(saved.text);
         if (saved.projectTitle !== undefined) setProjectTitle(saved.projectTitle);
@@ -76,27 +69,52 @@ const App: React.FC = () => {
         if (saved.bookAuthor !== undefined) setBookAuthor(saved.bookAuthor || "");
         if (saved.chapters !== undefined) setChapters(saved.chapters);
         if (saved.history !== undefined) setHistory(saved.history);
-
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const status = await stripeService.checkSubscriptionStatus(session.user.id);
-          setIsPro(status || (params.get('status') === 'success'));
-
-          // Cargar historial de la nube para persistencia total
-          cloudService.fetchUserNarrations().then(cloudHistory => {
-            if (cloudHistory.length > 0) {
-              setHistory(cloudHistory);
-            }
-          });
-        }
       } catch (err) {
-        console.error("Error cargando base de datos:", err);
+        console.error("Error cargando persistencia local:", err);
       } finally {
         setIsReady(true);
       }
     };
     init();
   }, []);
+
+  // Reaccionar a cambios de sesión (Login/Logout) para verificar status PRO y nube
+  useEffect(() => {
+    const syncUser = async () => {
+      if (session?.user) {
+        // 1. Verificar Suscripción
+        const params = new URLSearchParams(window.location.search);
+        const status = await stripeService.checkSubscriptionStatus(session.user.id);
+        const isSuccessParam = params.get('status') === 'success';
+
+        if (isSuccessParam) {
+          window.history.replaceState({}, document.title, "/");
+          alert("¡Bienvenido a PRO! Gracias por suscribirte.");
+        }
+
+        setIsPro(status || isSuccessParam);
+
+        // 2. Cargar historial de la nube (funde con local si es necesario, por ahora reemplaza o añade)
+        // Nota: Idealmente deberíamos fusionar, por ahora solo añadimos si local está vacío o simple append
+        cloudService.fetchUserNarrations().then(cloudHistory => {
+          if (cloudHistory.length > 0) {
+            // Evitar duplicados simples por ID
+            setHistory(prev => {
+              const combined = [...cloudHistory, ...prev];
+              // Filtrar duplicados por ID
+              const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
+              // Ordenar por fecha (más reciente primero)
+              return unique.sort((a, b) => b.timestamp - a.timestamp);
+            });
+          }
+        });
+      } else {
+        setIsPro(false);
+      }
+    };
+
+    syncUser();
+  }, [session]);
 
   useEffect(() => {
     if (!isReady) return;

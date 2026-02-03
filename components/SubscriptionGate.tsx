@@ -79,8 +79,19 @@ const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ userEmail, isPro, c
                     <button
                         onClick={async () => {
                             setVerifying(true);
-                            // Esperamos un momento y recargamos, la validación real ocurre en el App.tsx al iniciar
-                            setTimeout(() => window.location.reload(), 1500);
+                            try {
+                                const { data: { session } } = await supabase.auth.getSession();
+                                if (session) {
+                                    const isNowPro = await stripeService.checkSubscriptionStatus(session.user.id);
+                                    if (isNowPro) {
+                                        window.location.reload();
+                                        return;
+                                    }
+                                }
+                                window.location.reload();
+                            } catch (e) {
+                                window.location.reload();
+                            }
                         }}
                         disabled={loading || verifying}
                         className="w-full py-3 bg-white border-2 border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2"
