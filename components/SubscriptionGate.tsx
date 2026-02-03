@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { stripeService } from '../services/stripeService';
+import { supabase } from '../lib/supabaseClient';
 
 interface SubscriptionGateProps {
     userEmail: string;
@@ -9,6 +10,7 @@ interface SubscriptionGateProps {
 
 const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ userEmail, isPro, children }) => {
     const [loading, setLoading] = useState(false);
+    const [verifying, setVerifying] = useState(false);
 
     // Si es PRO, mostramos la App normal
     if (isPro) {
@@ -62,11 +64,39 @@ const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ userEmail, isPro, c
                                 setLoading(false);
                             }
                         }}
-                        disabled={loading}
+                        disabled={loading || verifying}
                         className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-300 transition-all flex items-center justify-center gap-3 hover:-translate-y-1"
                     >
                         {loading ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-rocket"></i>}
                         {loading ? 'CONECTANDO...' : 'SUSCRIBIRME AHORA'}
+                    </button>
+
+                    <button
+                        onClick={async () => {
+                            setVerifying(true);
+                            try {
+                                const { data: { session } } = await supabase.auth.getSession();
+                                if (session?.user) {
+                                    const isProStatus = await stripeService.checkSubscriptionStatus(session.user.id);
+                                    if (isProStatus) {
+                                        window.location.reload();
+                                    } else {
+                                        alert(`🔍 Verificación Fallida.\n\nUsuario: ${session.user.email}\nEstado PRO en base de datos: FALSE\n\nPor favor, asegúrate de haber actualizado el campo 'is_pro' a TRUE en la tabla 'profiles' para ESTE usuario.`);
+                                    }
+                                } else {
+                                    alert("No se encontró sesión activa. Intenta iniciar sesión nuevamente.");
+                                }
+                            } catch (err: any) {
+                                alert("Error verificación: " + err.message);
+                            } finally {
+                                setVerifying(false);
+                            }
+                        }}
+                        disabled={loading || verifying}
+                        className="w-full py-3 bg-white border-2 border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2"
+                    >
+                        {verifying ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-rotate-right"></i>}
+                        {verifying ? 'VERIFICANDO...' : 'YA TENGO PRO (ACTUALIZAR)'}
                     </button>
 
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
