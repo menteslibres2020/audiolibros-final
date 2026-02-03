@@ -13,6 +13,7 @@ import Auth from './components/Auth';
 import { Session } from '@supabase/supabase-js';
 import SubscriptionGate from './components/SubscriptionGate';
 import { stripeService } from './services/stripeService';
+import { cloudService } from './services/cloudService';
 
 const App: React.FC = () => {
   const [isReady, setIsReady] = useState(false);
@@ -80,6 +81,13 @@ const App: React.FC = () => {
         if (session?.user) {
           const status = await stripeService.checkSubscriptionStatus(session.user.id);
           setIsPro(status || (params.get('status') === 'success'));
+
+          // Cargar historial de la nube para persistencia total
+          cloudService.fetchUserNarrations().then(cloudHistory => {
+            if (cloudHistory.length > 0) {
+              setHistory(cloudHistory);
+            }
+          });
         }
       } catch (err) {
         console.error("Error cargando base de datos:", err);
@@ -144,9 +152,31 @@ const App: React.FC = () => {
       );
 
       const voiceName = VOICES.find(v => v.id === voiceId)?.name || 'Voz';
+
+      let finalAudioUrl = audioUrl;
+      let finalId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+
+      // Auto-Sync a la Nube (Supabase)
+      try {
+        const res = await fetch(audioUrl);
+        const blob = await res.blob();
+        const cloudResult = await cloudService.uploadNarration(blob, {
+          text: content,
+          voiceId,
+          emotion,
+          projectTitle: sourceName
+        });
+        if (cloudResult) {
+          finalAudioUrl = cloudResult.audioUrl;
+          finalId = cloudResult.id;
+        }
+      } catch (cloudErr) {
+        console.error("Error sync nube:", cloudErr);
+      }
+
       const historyItem: NarrationResult = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-        audioUrl,
+        id: finalId,
+        audioUrl: finalAudioUrl,
         timestamp: Date.now(),
         text: `[${sourceName}] ${content.substring(0, 50)}...`,
         voiceName
