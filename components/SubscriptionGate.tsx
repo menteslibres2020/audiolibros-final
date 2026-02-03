@@ -27,9 +27,14 @@ const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ userEmail, isPro, c
                 </div>
 
                 <div className="space-y-3">
-                    <h1 className="text-3xl md:text-4xl font-black text-slate-900">Actualiza a PRO</h1>
+                    <h1 className="text-3xl md:text-4xl font-black text-slate-900">Completa tu Registro</h1>
+                    <div className="flex justify-center">
+                        <span className="bg-indigo-100 text-indigo-700 text-xs font-black px-3 py-1 rounded-full uppercase tracking-widest border border-indigo-200">
+                            PASO 2 DE 2
+                        </span>
+                    </div>
                     <p className="text-slate-500 font-medium text-lg">
-                        Desbloquea el poder de la narración con IA ilimitada.
+                        Tu cuenta ha sido creada. Para finalizar y acceder, activa tu plan PRO.
                     </p>
                 </div>
 
@@ -60,7 +65,7 @@ const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ userEmail, isPro, c
                             try {
                                 await stripeService.startCheckout(userEmail);
                             } catch (e: any) {
-                                alert("Error iniciando pago: " + e.message);
+                                alert("Error probando pago: " + (e.message || "Intenta nuevamente"));
                                 setLoading(false);
                             }
                         }}
@@ -68,35 +73,20 @@ const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ userEmail, isPro, c
                         className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-300 transition-all flex items-center justify-center gap-3 hover:-translate-y-1"
                     >
                         {loading ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-rocket"></i>}
-                        {loading ? 'CONECTANDO...' : 'SUSCRIBIRME AHORA'}
+                        {loading ? 'REDIRECCIONANDO...' : 'FINALIZAR REGISTRO (PAGAR)'}
                     </button>
 
                     <button
                         onClick={async () => {
                             setVerifying(true);
-                            try {
-                                const { data: { session } } = await supabase.auth.getSession();
-                                if (session?.user) {
-                                    const isProStatus = await stripeService.checkSubscriptionStatus(session.user.id);
-                                    if (isProStatus) {
-                                        window.location.reload();
-                                    } else {
-                                        alert(`🔍 Verificación Fallida.\n\nUsuario: ${session.user.email}\nEstado PRO en base de datos: FALSE\n\nPor favor, asegúrate de haber actualizado el campo 'is_pro' a TRUE en la tabla 'profiles' para ESTE usuario.`);
-                                    }
-                                } else {
-                                    alert("No se encontró sesión activa. Intenta iniciar sesión nuevamente.");
-                                }
-                            } catch (err: any) {
-                                alert("Error verificación: " + err.message);
-                            } finally {
-                                setVerifying(false);
-                            }
+                            // Esperamos un momento y recargamos, la validación real ocurre en el App.tsx al iniciar
+                            setTimeout(() => window.location.reload(), 1500);
                         }}
                         disabled={loading || verifying}
                         className="w-full py-3 bg-white border-2 border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2"
                     >
-                        {verifying ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-rotate-right"></i>}
-                        {verifying ? 'VERIFICANDO...' : 'YA TENGO PRO (ACTUALIZAR)'}
+                        {verifying ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-check-double"></i>}
+                        {verifying ? 'VERIFICANDO PAGO...' : 'YA PAGUÉ (INGRESAR)'}
                     </button>
 
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
