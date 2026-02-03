@@ -72,6 +72,17 @@ const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ userEmail, isPro, c
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
                         Pago seguro vía Stripe • Cancela cuando quieras
                     </p>
+
+                    <button
+                        onClick={async () => {
+                            const { supabase } = await import('../lib/supabaseClient'); // Lazy import to avoid cycle if any
+                            await supabase.auth.signOut();
+                            window.location.reload();
+                        }}
+                        className="text-[11px] font-bold text-slate-400 hover:text-red-500 transition-colors py-2 border-t border-slate-100 w-full mt-2"
+                    >
+                        ¿No quieres suscribirte ahora? <span className="underline decoration-2">Cerrar Sesión</span>
+                    </button>
                 </div>
             </div>
         </div>
