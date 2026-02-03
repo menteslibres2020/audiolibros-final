@@ -34,7 +34,8 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                     password,
                 });
                 if (error) throw error;
-                setMessage('Registro exitoso! Por favor verifica tu correo si es necesario.');
+                setMessage('Registro exitoso! Revisa tu email e inicia sesión.');
+                setIsLogin(true); // Auto-switch to login
             }
         } catch (err: any) {
             setError(err.message);
@@ -85,7 +86,24 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
 
                 {/* Lado Derecho: Formulario */}
                 <div className="flex-1 p-8 md:p-12 lg:p-16 flex flex-col justify-center bg-white relative">
-                    <div className="max-w-sm mx-auto w-full space-y-8">
+                    <div className="max-w-sm mx-auto w-full space-y-6">
+                        {/* Tabs de Navegación */}
+                        <div className="flex p-1 bg-slate-50 rounded-xl border border-slate-100">
+                            <button
+                                type="button"
+                                onClick={() => { setIsLogin(true); setError(null); setMessage(null); }}
+                                className={`flex-1 py-3 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all ${isLogin ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5' : 'text-slate-400 hover:text-slate-500'}`}
+                            >
+                                Iniciar Sesión
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setIsLogin(false); setError(null); setMessage(null); }}
+                                className={`flex-1 py-3 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all ${!isLogin ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5' : 'text-slate-400 hover:text-slate-500'}`}
+                            >
+                                Registrarse
+                            </button>
+                        </div>
                         <div className="text-center md:text-left">
                             <h1 className="text-3xl font-black text-slate-900 mb-2">{isLogin ? 'Bienvenido de nuevo' : 'Crea tu cuenta'}</h1>
                             <p className="text-slate-500 font-medium">
@@ -163,14 +181,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                             </button>
                         </form>
 
-                        <div className="text-center">
-                            <button
-                                onClick={() => setIsLogin(!isLogin)}
-                                className="text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors py-2"
-                            >
-                                {isLogin ? '¿Nuevo aquí? Crea tu cuenta' : '¿Ya tienes cuenta? Ingresa aquí'}
-                            </button>
-                        </div>
+                        {/* Botón inferior eliminado por redundancia con Tabs */}
                     </div>
                 </div>
             </div>
