@@ -9,30 +9,41 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 export const stripeService = {
     // Función para redirigir al Checkout de Stripe
     async startCheckout(userEmail: string) {
+        // Opción 1 (RECOMENDADA): Payment Links (No-Code, más robusto)
+        // Crea un link en Stripe Dashboard > Productos > [Tu Producto] > Crear Link de Pago
+        // Y ponlo en tu .env como VITE_STRIPE_PAYMENT_LINK
+        const paymentLink = import.meta.env.VITE_STRIPE_PAYMENT_LINK;
+
+        if (paymentLink) {
+            // Añadimos el email para que el usuario no tenga que escribirlo de nuevo
+            const separator = paymentLink.includes('?') ? '&' : '?';
+            const finalUrl = `${paymentLink}${separator}prefilled_email=${encodeURIComponent(userEmail)}`;
+            window.location.href = finalUrl;
+            return;
+        }
+
+        // Opción 2 (LEGACY/FALLBACK): Client-Only Checkout
+        // Esto a menudo está desactivado por defecto en cuentas nuevas de Stripe o versiones recientes del SDK.
+        // Si ves el error "redirectToCheckout no supported", USA LA OPCIÓN 1.
         const stripe = await stripePromise;
         if (!stripe) throw new Error("Stripe no pudo cargarse.");
 
-        // Crear sesión de Checkout (Client-Only Checkout)
-        // Para producción real segura, esto idealmente se hace desde un Backend (Edge Function),
-        // pero para este MVP usaremos "Client-Only" o "Payment Links" si es posible,
-        // o el enfoque estándar de Checkout client-side si tienes habilitado 'Client-only integration' en Stripe.
+        console.warn("Intentando redirección legacy... Si falla, configura VITE_STRIPE_PAYMENT_LINK.");
 
-        // OPCIÓN: Usar 'line_items' directo requiere habilitación en Stripe Dashboard.
-        // Vamos a usar la redirección directa por ID de Precio.
         const { error } = await stripe.redirectToCheckout({
             lineItems: [{
-                price: import.meta.env.VITE_STRIPE_PRICE_ID, // Tu ID: price_1Swpfj...
+                price: import.meta.env.VITE_STRIPE_PRICE_ID,
                 quantity: 1,
             }],
             mode: 'subscription',
-            successUrl: window.location.origin + '/?status=success&session_id={CHECKOUT_SESSION_ID}',
+            successUrl: window.location.origin + '/?status=success',
             cancelUrl: window.location.origin + '/?status=cancel',
-            customerEmail: userEmail, // Pre-rellenar el email del usuario logueado
+            customerEmail: userEmail,
         });
 
         if (error) {
-            console.error("Error Stripe:", error);
-            throw error;
+            console.error("Error Stripe SDK:", error);
+            throw new Error(error.message + " (Sugerencia: Usa PAYMENT LINKS en lugar de API key directa)");
         }
     },
 
