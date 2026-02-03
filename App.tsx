@@ -38,6 +38,7 @@ const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [isPro, setIsPro] = useState(false);
+  const [showAccountModal, setShowAccountModal] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -299,7 +300,7 @@ const App: React.FC = () => {
               <input type="file" ref={fileInputRef} className="hidden" accept=".epub" onChange={handleEpubUpload} />
               <button onClick={clearSession} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-lg bg-slate-100 text-slate-400 hover:text-red-600 shrink-0" title="Limpiar todo"><i className="fa-solid fa-trash-can text-xs md:text-base"></i></button>
               <div className="w-px h-6 bg-slate-200 mx-1 md:mx-2 shrink-0"></div>
-              <button onClick={() => supabase.auth.signOut()} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 shrink-0" title="Cerrar Sesión"><i className="fa-solid fa-right-from-bracket text-xs md:text-base"></i></button>
+              <button onClick={() => setShowAccountModal(true)} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 shrink-0" title="Mi Cuenta"><i className="fa-solid fa-user-gear text-xs md:text-base"></i></button>
             </div>
           </div>
         </header>
@@ -519,6 +520,63 @@ const App: React.FC = () => {
           PRODUCIDO CON GEMINI FLASH 2.5 • VOCES LIBRES • 2024
         </footer>
       </div>
+
+      {showAccountModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowAccountModal(false)}>
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-black text-slate-900">Mi Cuenta</h3>
+              <button onClick={() => setShowAccountModal(false)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <div className="text-center space-y-4 mb-8">
+              <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-3xl">
+                <i className="fa-solid fa-user"></i>
+              </div>
+              <div>
+                <p className="font-bold text-slate-900 truncate px-4" title={session?.user?.email}>{session?.user?.email}</p>
+                <span className={`inline-block mt-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${isPro ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
+                  {isPro ? 'PLAN PRO ACTIVO 👑' : 'PLAN GRATUITO'}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  const portalLink = import.meta.env.VITE_STRIPE_CUSTOMER_PORTAL;
+                  if (portalLink) {
+                    window.open(portalLink, '_blank');
+                  } else {
+                    alert("Para gestionar tu suscripción (cancelar, ver facturas, etc.), por favor revisa el correo de confirmación que recibiste de Stripe o usa el enlace del portal de cliente si lo tienes configurado.");
+                  }
+                }}
+                className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                <i className="fa-solid fa-credit-card"></i> Gestionar Suscripción
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowAccountModal(false);
+                  supabase.auth.signOut();
+                  // window.location.reload(); // signOut usually triggers session change
+                }}
+                className="w-full py-3 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                <i className="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+              </button>
+            </div>
+
+            <p className="text-[10px] text-center text-slate-400 mt-6 font-medium">
+              ID: <span className="font-mono">{session?.user?.id?.substring(0, 8)}...</span>
+            </p>
+          </div>
+        </div>
+      )}
+
     </SubscriptionGate>
   );
 };

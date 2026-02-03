@@ -43,34 +43,40 @@ class PersistenceService {
   }
 
   async saveState(state: Partial<AppState>): Promise<void> {
+    // 1. Prepare data (Serialization) BEFORE opening transaction
+    // Async operations (await) here would close the transaction if it were already open.
+    const dataToSave: any = { ...state };
+
+    // Deep clone to avoid mutating original state during serialization
+    if (state.chapters) {
+      const chaptersToSave = JSON.parse(JSON.stringify(state.chapters));
+      dataToSave.chapters = await this.serializeChapters(chaptersToSave);
+    }
+    if (state.history) {
+      const historyToSave = JSON.parse(JSON.stringify(state.history));
+      dataToSave.history = await this.serializeHistory(historyToSave);
+    }
+
+    // 2. Open Transaction and Write (Synchronous-like batch)
     const db = await this.getDB();
     const transaction = db.transaction('appState', 'readwrite');
     const store = transaction.objectStore('appState');
 
-    // Clonamos para serialización
-    const chaptersToSave = state.chapters ? JSON.parse(JSON.stringify(state.chapters)) : undefined;
-    const historyToSave = state.history ? JSON.parse(JSON.stringify(state.history)) : undefined;
-
-    // Convertimos audios a ArrayBuffer
-    const serializedChapters = chaptersToSave ? await this.serializeChapters(chaptersToSave) : undefined;
-    const serializedHistory = historyToSave ? await this.serializeHistory(historyToSave) : undefined;
-
-    const dataToSave: any = { ...state };
-    if (serializedChapters) dataToSave.chapters = serializedChapters;
-    if (serializedHistory) dataToSave.history = serializedHistory;
-
     return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(new Error('Transaction aborted'));
+
       const entries = Object.entries(dataToSave).filter(([_, v]) => v !== undefined);
-      let remaining = entries.length;
-      if (remaining === 0) resolve();
+
+      if (entries.length === 0) {
+        // If nothing to save, we effectively just wait for transaction to complete (empty) or return immediately
+        resolve(); // Manually resolve if no requests are made, though transaction still completes.
+        return;
+      }
 
       entries.forEach(([key, value]) => {
-        const req = store.put(value, key);
-        req.onsuccess = () => {
-          remaining--;
-          if (remaining === 0) resolve();
-        };
-        req.onerror = () => reject(req.error);
+        store.put(value, key);
       });
     });
   }
