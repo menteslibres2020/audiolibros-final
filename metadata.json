@@ -1,0 +1,7 @@
+{
+  "name": "AUDIOLIBROS PRO",
+  "description": "Una aplicación avanzada para crear narraciones profesionales utilizando las voces gratuitas de última generación de Gemini, permitiendo convertir texto en audio realista al instante.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
