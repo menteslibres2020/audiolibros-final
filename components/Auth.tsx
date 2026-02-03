@@ -89,7 +89,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                         <div className="text-center md:text-left">
                             <h1 className="text-3xl font-black text-slate-900 mb-2">{isLogin ? 'Bienvenido de nuevo' : 'Crea tu cuenta'}</h1>
                             <p className="text-slate-500 font-medium">
-                                {isLogin ? 'Ingresa tus credenciales para continuar.' : 'Comienza tu prueba gratuita hoy mismo.'}
+                                {isLogin ? 'Ingresa tus credenciales para continuar.' : 'Regístrate para acceder al estudio.'}
                             </p>
                         </div>
 
@@ -168,7 +168,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                                 onClick={() => setIsLogin(!isLogin)}
                                 className="text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors py-2"
                             >
-                                {isLogin ? '¿Nuevo aquí? Crea una cuenta gratis' : '¿Ya tienes cuenta? Ingresa aquí'}
+                                {isLogin ? '¿Nuevo aquí? Crea tu cuenta' : '¿Ya tienes cuenta? Ingresa aquí'}
                             </button>
                         </div>
                     </div>
