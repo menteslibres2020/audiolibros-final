@@ -28,6 +28,8 @@ const App: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [mergingChapterId, setMergingChapterId] = useState<string | null>(null);
+  const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null);
+  const [tempSegmentText, setTempSegmentText] = useState('');
   const [showStats, setShowStats] = useState(true);
   const [history, setHistory] = useState<NarrationResult[]>([]);
   const [error, setError] = useState<{ message: string, isQuota?: boolean } | null>(null);
@@ -233,6 +235,33 @@ const App: React.FC = () => {
       setProcessingId(null);
       setCurrentProgress({ current: 0, total: 0 });
     }
+  };
+
+  const startEditing = (segId: string, currentText: string) => {
+    setEditingSegmentId(segId);
+    setTempSegmentText(currentText);
+  };
+
+  const saveEdit = (chapterId: string, segId: string) => {
+    const newChapters = chapters.map(ch => {
+      if (ch.id !== chapterId) return ch;
+      return {
+        ...ch,
+        segments: ch.segments?.map(s => {
+          if (s.id !== segId) return s;
+          // Si el texto cambia, mantenemos el audioUrl anterior pero el usuario deberá regenerar si quiere que coincida
+          return { ...s, content: tempSegmentText };
+        })
+      };
+    });
+    setChapters(newChapters);
+    setEditingSegmentId(null);
+    setTempSegmentText('');
+  };
+
+  const cancelEdit = () => {
+    setEditingSegmentId(null);
+    setTempSegmentText('');
   };
 
   const handleDownloadChapter = async (chapter: EpubChapter) => {
@@ -543,23 +572,50 @@ const App: React.FC = () => {
                               <div key={seg.id} className={`bg-slate-50 p-4 md:p-5 rounded-xl md:rounded-2xl border transition-all ${processingId === seg.id ? 'border-indigo-500 ring-2 ring-indigo-100 bg-indigo-50/30' : 'border-slate-200 hover:border-indigo-200'}`}>
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                                   <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">FRAGMENTO {sIdx + 1}</span>
-                                  <button
-                                    onClick={() => processSegment(chapter.id, seg.id)}
-                                    disabled={loading}
-                                    className={`px-4 md:px-6 py-2 border text-[10px] font-bold rounded-lg md:rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 ${processingId === seg.id
-                                      ? 'bg-indigo-600 border-indigo-600 text-white animate-pulse'
-                                      : 'bg-white border-slate-200 hover:border-indigo-600 text-slate-700'
-                                      }`}
-                                  >
-                                    {processingId === seg.id ? (
-                                      <><i className="fa-solid fa-circle-notch animate-spin"></i> NARRANDO...</>
+
+                                  <div className="flex items-center gap-2">
+                                    {editingSegmentId === seg.id ? (
+                                      <>
+                                        <button onClick={() => saveEdit(chapter.id, seg.id)} className="px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-[10px] font-bold rounded-lg transition-colors" title="Guardar cambios">
+                                          <i className="fa-solid fa-check"></i>
+                                        </button>
+                                        <button onClick={cancelEdit} className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-600 text-[10px] font-bold rounded-lg transition-colors" title="Cancelar">
+                                          <i className="fa-solid fa-xmark"></i>
+                                        </button>
+                                      </>
                                     ) : (
-                                      seg.status === 'completed' ? 'REGENERAR AUDIO' : 'NARRAR FRAGMENTO'
+                                      <button onClick={() => startEditing(seg.id, seg.content)} className="px-3 py-2 bg-white border border-slate-200 hover:border-indigo-400 text-slate-400 hover:text-indigo-600 text-[10px] font-bold rounded-lg transition-colors" title="Editar texto">
+                                        <i className="fa-solid fa-pen"></i>
+                                      </button>
                                     )}
-                                  </button>
+
+                                    <button
+                                      onClick={() => processSegment(chapter.id, seg.id)}
+                                      disabled={loading || editingSegmentId === seg.id}
+                                      className={`px-4 md:px-6 py-2 border text-[10px] font-bold rounded-lg md:rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 ${processingId === seg.id
+                                        ? 'bg-indigo-600 border-indigo-600 text-white animate-pulse'
+                                        : 'bg-white border-slate-200 hover:border-indigo-600 text-slate-700'
+                                        }`}
+                                    >
+                                      {processingId === seg.id ? (
+                                        <><i className="fa-solid fa-circle-notch animate-spin"></i> NARRANDO...</>
+                                      ) : (
+                                        seg.status === 'completed' ? 'REGENERAR AUDIO' : 'NARRAR FRAGMENTO'
+                                      )}
+                                    </button>
+                                  </div>
                                 </div>
                                 <div className="relative">
-                                  <textarea value={seg.content} readOnly className="w-full bg-white border border-slate-100 p-3 md:p-4 text-xs text-slate-600 rounded-lg md:rounded-xl outline-none font-medium h-28 md:h-32 custom-scrollbar resize-none" />
+                                  {editingSegmentId === seg.id ? (
+                                    <textarea
+                                      value={tempSegmentText}
+                                      onChange={(e) => setTempSegmentText(e.target.value)}
+                                      className="w-full bg-white border-2 border-indigo-500 p-3 md:p-4 text-xs text-slate-800 rounded-lg md:rounded-xl outline-none font-medium h-28 md:h-32 custom-scrollbar resize-none shadow-inner"
+                                      autoFocus
+                                    />
+                                  ) : (
+                                    <textarea value={seg.content} readOnly className="w-full bg-white border border-slate-100 p-3 md:p-4 text-xs text-slate-600 rounded-lg md:rounded-xl outline-none font-medium h-28 md:h-32 custom-scrollbar resize-none" />
+                                  )}
                                   {processingId === seg.id && (
                                     <div className="absolute inset-0 bg-white/40 flex items-center justify-center rounded-lg md:rounded-xl backdrop-blur-[1px]">
                                       <div className="flex flex-col items-center gap-2">
