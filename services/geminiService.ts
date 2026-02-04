@@ -106,25 +106,36 @@ export class GeminiTTSService {
     const models = [
       'imagen-3.0-generate-001',
       'imagen-3.0-generate-002',
-      'imagen-3.0-capability-001', // A veces disponible
-      'image-generation-002', // Fallback a Imagen 2 para cuentas antiguas/sin acceso a 3
+      'gemini-2.0-flash-image-preview', // Nuevo modelo sugerido
+      'image-generation-002',
     ];
 
     let lastError = null;
 
     for (const model of models) {
       try {
-        // Cambiado a :predict que es el endpoint estándar
-        const url = `/api/gemini/v1beta/models/${model}:predict`;
-        console.log(`Intentando generar imagen con modelo ${model}...`);
+        let url = '';
+        let body = {};
 
-        const response = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": apiKey,
-          },
-          body: JSON.stringify({
+        // Lógica para diferenciar API de Imagen vs Gemini
+        if (model.includes('gemini')) {
+          // API Gemini: generateContent
+          url = `/api/gemini/v1beta/models/${model}:generateContent`;
+          body = {
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseModalities: ["IMAGE"], // Forzar salida de imagen
+              imageGenerationConfig: {
+                sampleCount: 1,
+                aspectRatio: "1:1",
+                personGeneration: "allow_adult",
+              }
+            }
+          };
+        } else {
+          // API Imagen: predict
+          url = `/api/gemini/v1beta/models/${model}:predict`;
+          body = {
             instances: [
               { prompt: prompt }
             ],
@@ -134,7 +145,18 @@ export class GeminiTTSService {
               safetySetting: "block_medium_and_above",
               personGeneration: "allow_adult",
             }
-          }),
+          };
+        }
+
+        console.log(`Intentando generar imagen con modelo ${model} en URL ${url}...`);
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          body: JSON.stringify(body),
         });
 
         if (!response.ok) {
@@ -153,15 +175,24 @@ export class GeminiTTSService {
 
         let base64Image = null;
 
-        // Intentar parsear respuesta estándar de :predict
-        if (data.predictions && data.predictions.length > 0) {
+        // 1. Respuesta tipo Gemini (generateContent)
+        if (data.candidates && data.candidates[0]?.content?.parts) {
+          const part = data.candidates[0].content.parts.find((p: any) => p.inlineData);
+          if (part && part.inlineData && part.inlineData.data) {
+            base64Image = part.inlineData.data;
+          }
+        }
+        // 2. Respuesta tipo Imagen Vertex (:predict)
+        else if (data.predictions && data.predictions.length > 0) {
           const prediction = data.predictions[0];
           if (prediction.bytesBase64Encoded) {
             base64Image = prediction.bytesBase64Encoded;
           } else if (typeof prediction === 'string') {
             base64Image = prediction;
           }
-        } else if (data.images && data.images.length > 0 && data.images[0].image64) {
+        }
+        // 3. Respuesta tipo Imagen Legacy
+        else if (data.images && data.images.length > 0 && data.images[0].image64) {
           base64Image = data.images[0].image64;
         }
 
@@ -171,7 +202,6 @@ export class GeminiTTSService {
       } catch (error: any) {
         console.error(`Error con modelo ${model}:`, error);
         lastError = error;
-        // Si el error no es 404, quizás no deberíamos seguir probando, pero por seguridad seguimos
       }
     }
 
