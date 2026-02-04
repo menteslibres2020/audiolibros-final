@@ -102,12 +102,13 @@ export class GeminiTTSService {
     }
 
 
-    // Intentar con varios modelos conocidos
+    // Intentar con varios modelos conocidos - EL USUARIO CONFIRMA GEMINI 2.5 FLASH IMAGE
     const models = [
+      'gemini-2.0-flash-image', // Variantes comunes
+      'gemini-2.5-flash-image', // El nombre oficial más reciente
+      'gemini-2.0-flash-image-preview', // Preview version
       'imagen-3.0-generate-001',
       'imagen-3.0-generate-002',
-      'gemini-2.0-flash-image-preview', // Nuevo modelo sugerido
-      'image-generation-002',
     ];
 
     let lastError = null;
@@ -125,11 +126,7 @@ export class GeminiTTSService {
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
               responseModalities: ["IMAGE"], // Forzar salida de imagen
-              imageGenerationConfig: {
-                sampleCount: 1,
-                aspectRatio: "1:1",
-                personGeneration: "allow_adult",
-              }
+              speechConfig: undefined, // Asegurar que no vaya config de audio
             }
           };
         } else {
