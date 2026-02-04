@@ -3,7 +3,7 @@ import { GoogleGenAI, Modality } from "@google/genai";
 import { decodeBase64, decodeAudioData, audioBufferToWavBlob, mergeAudioBuffers } from "../utils/audioUtils.ts";
 
 export class GeminiTTSService {
-  private MAX_CHARS_PER_CHUNK = 1500; 
+  private MAX_CHARS_PER_CHUNK = 5000;
 
   private getAIInstance() {
     return new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -15,12 +15,12 @@ export class GeminiTTSService {
 
     while (currentPos < text.length) {
       let endPos = currentPos + this.MAX_CHARS_PER_CHUNK;
-      
+
       if (endPos < text.length) {
         const lastPeriod = text.lastIndexOf('.', endPos);
         const lastNewline = text.lastIndexOf('\n', endPos);
         const bestSplit = Math.max(lastPeriod, lastNewline);
-        
+
         if (bestSplit > currentPos) {
           endPos = bestSplit + 1;
         }
@@ -34,8 +34,8 @@ export class GeminiTTSService {
   }
 
   async generateNarration(
-    text: string, 
-    voiceName: string, 
+    text: string,
+    voiceName: string,
     emotion: string,
     onProgress?: (current: number, total: number) => void
   ): Promise<string> {
@@ -48,10 +48,10 @@ export class GeminiTTSService {
       if (onProgress) onProgress(i + 1, chunks.length);
 
       const chunk = chunks[i];
-      
+
       // Prompt altamente enfático en la emoción requerida
       const prompt = `Actúa como un locutor profesional. Tu tarea primordial es narrar el siguiente texto capturando perfectamente una atmósfera ${emotion.toUpperCase()}. Cada palabra debe estar impregnada de esa emoción específica (${emotion}). No seas neutral; sé evocador y asegúrate de que el tono de voz refleje la intención emocional del contenido: ${chunk}`;
-      
+
       const fetchChunk = async (retryCount = 0): Promise<string> => {
         try {
           const response = await ai.models.generateContent({
