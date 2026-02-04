@@ -654,6 +654,15 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {showCoverGenerator && (
+        <CoverGenerator
+          initialTitle={projectTitle || bookTitle}
+          initialAuthor={bookAuthor}
+          emotion={emotion}
+          onClose={() => setShowCoverGenerator(false)}
+        />
+      )}
+
       {showResetPassword && <ResetPasswordModal onClose={() => setShowResetPassword(false)} />}
 
     </SubscriptionGate>
