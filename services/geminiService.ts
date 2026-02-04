@@ -102,8 +102,8 @@ export class GeminiTTSService {
       throw new Error("API Key no configurada. Revisa tu archivo .env");
     }
 
-    // Usar el modelo imagen-3.0-generate-001 que es el estándar actual para beta
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateImages?key=${apiKey}`;
+    // Intentar mover la API Key al header 'x-goog-api-key' para evitar problemas de CORS con query params en algunos navegadores
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateImages`;
 
     console.log("Generando imagen con prompt:", prompt.substring(0, 50) + "...");
 
@@ -112,6 +112,7 @@ export class GeminiTTSService {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
         },
         body: JSON.stringify({
           prompt: prompt,
