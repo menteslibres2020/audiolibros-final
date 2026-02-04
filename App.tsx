@@ -14,6 +14,7 @@ import { Session } from '@supabase/supabase-js';
 import SubscriptionGate from './components/SubscriptionGate';
 import { stripeService } from './services/stripeService';
 import { cloudService } from './services/cloudService';
+import ResetPasswordModal from './components/ResetPasswordModal';
 
 const App: React.FC = () => {
   const [isReady, setIsReady] = useState(false);
@@ -40,6 +41,7 @@ const App: React.FC = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [isPro, setIsPro] = useState(false);
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -49,8 +51,11 @@ const App: React.FC = () => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+      if (event === 'PASSWORD_RECOVERY') {
+        setShowResetPassword(true);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -624,6 +629,8 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {showResetPassword && <ResetPasswordModal onClose={() => setShowResetPassword(false)} />}
 
     </SubscriptionGate>
   );

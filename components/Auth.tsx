@@ -13,6 +13,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
     const [isLogin, setIsLogin] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+    const [isForgotPassword, setIsForgotPassword] = useState(false);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -21,7 +22,13 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         setMessage(null);
 
         try {
-            if (isLogin) {
+            if (isForgotPassword) {
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin
+                });
+                if (error) throw error;
+                setMessage('Email de recuperación enviado. Revisa tu bandeja de entrada.');
+            } else if (isLogin) {
                 const { error } = await supabase.auth.signInWithPassword({
                     email,
                     password,
@@ -105,9 +112,13 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                             </button>
                         </div>
                         <div className="text-center md:text-left">
-                            <h1 className="text-3xl font-black text-slate-900 mb-2">{isLogin ? 'Bienvenido de nuevo' : 'Crea tu cuenta'}</h1>
+                            <h1 className="text-3xl font-black text-slate-900 mb-2">
+                                {isForgotPassword ? 'Recuperar Contraseña' : (isLogin ? 'Bienvenido de nuevo' : 'Crea tu cuenta')}
+                            </h1>
                             <p className="text-slate-500 font-medium">
-                                {isLogin ? 'Ingresa tus credenciales para continuar.' : 'Regístrate para acceder al estudio.'}
+                                {isForgotPassword
+                                    ? 'Ingresa tu correo para recibir un enlace de recuperación.'
+                                    : (isLogin ? 'Ingresa tus credenciales para continuar.' : 'Regístrate para acceder al estudio.')}
                             </p>
                         </div>
 
@@ -150,22 +161,35 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-1">Contraseña</label>
-                                <div className="relative">
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                                        <i className="fa-solid fa-lock"></i>
+                            {!isForgotPassword && (
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-1">Contraseña</label>
+                                    <div className="relative">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                                            <i className="fa-solid fa-lock"></i>
+                                        </div>
+                                        <input
+                                            type="password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="w-full pl-11 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none font-bold text-slate-700 transition-all placeholder:text-slate-300"
+                                            placeholder="••••••••"
+                                            required={!isForgotPassword}
+                                        />
                                     </div>
-                                    <input
-                                        type="password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full pl-11 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none font-bold text-slate-700 transition-all placeholder:text-slate-300"
-                                        placeholder="••••••••"
-                                        required
-                                    />
+                                    {isLogin && (
+                                        <div className="text-right">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsForgotPassword(true)}
+                                                className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wide"
+                                            >
+                                                ¿Olvidaste tu contraseña?
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
+                            )}
 
                             <button
                                 type="submit"
@@ -175,10 +199,20 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                                 {loading ? (
                                     <i className="fa-solid fa-circle-notch animate-spin"></i>
                                 ) : (
-                                    <i className={`fa-solid ${isLogin ? 'fa-arrow-right-to-bracket' : 'fa-rocket'}`}></i>
+                                    <i className={`fa-solid ${isForgotPassword ? 'fa-paper-plane' : (isLogin ? 'fa-arrow-right-to-bracket' : 'fa-rocket')}`}></i>
                                 )}
-                                {loading ? 'PROCESANDO...' : (isLogin ? 'INICIAR SESIÓN' : 'CREAR CUENTA')}
+                                {loading ? 'PROCESANDO...' : (isForgotPassword ? 'ENVIAR ENLACE' : (isLogin ? 'INICIAR SESIÓN' : 'CREAR CUENTA'))}
                             </button>
+
+                            {isForgotPassword && (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsForgotPassword(false)}
+                                    className="w-full py-4 text-slate-400 font-bold text-sm uppercase tracking-widest hover:text-slate-600 transition-colors"
+                                >
+                                    Volver al login
+                                </button>
+                            )}
                         </form>
 
                         {/* Botón inferior eliminado por redundancia con Tabs */}
