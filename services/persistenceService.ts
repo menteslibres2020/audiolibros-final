@@ -15,6 +15,7 @@ export interface AppState {
   bookAuthor: string;
   chapters: EpubChapter[];
   history: NarrationResult[];
+  projectCharCount: number;
 }
 
 class PersistenceService {
@@ -86,7 +87,7 @@ class PersistenceService {
     const transaction = db.transaction('appState', 'readonly');
     const store = transaction.objectStore('appState');
     const state: Partial<AppState> = {};
-    const keys = ['text', 'projectTitle', 'voiceId', 'emotion', 'mode', 'bookTitle', 'bookAuthor', 'chapters', 'history'];
+    const keys = ['text', 'projectTitle', 'voiceId', 'emotion', 'mode', 'bookTitle', 'bookAuthor', 'chapters', 'history', 'projectCharCount'];
 
     return new Promise((resolve) => {
       let completed = 0;

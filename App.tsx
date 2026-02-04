@@ -32,6 +32,7 @@ const App: React.FC = () => {
   const [tempSegmentText, setTempSegmentText] = useState('');
   const [showStats, setShowStats] = useState(true);
   const [history, setHistory] = useState<NarrationResult[]>([]);
+  const [projectCharCount, setProjectCharCount] = useState(0);
   const [error, setError] = useState<{ message: string, isQuota?: boolean } | null>(null);
 
   const [mode, setMode] = useState<'text' | 'epub'>('text');
@@ -80,6 +81,7 @@ const App: React.FC = () => {
         if (saved.bookAuthor !== undefined) setBookAuthor(saved.bookAuthor || "");
         if (saved.chapters !== undefined) setChapters(saved.chapters);
         if (saved.history !== undefined) setHistory(saved.history);
+        if (saved.projectCharCount !== undefined) setProjectCharCount(saved.projectCharCount);
       } catch (err) {
         console.error("Error cargando persistencia local:", err);
       } finally {
@@ -132,12 +134,12 @@ const App: React.FC = () => {
     const save = async () => {
       await persistenceService.saveState({
         text, projectTitle, voiceId, emotion, mode,
-        bookTitle, bookAuthor, history, chapters
+        bookTitle, bookAuthor, history, chapters, projectCharCount
       });
     };
     const timer = setTimeout(save, 1000);
     return () => clearTimeout(timer);
-  }, [text, projectTitle, voiceId, emotion, mode, bookTitle, bookAuthor, history, chapters, isReady]);
+  }, [text, projectTitle, voiceId, emotion, mode, bookTitle, bookAuthor, history, chapters, isReady, projectCharCount]);
 
   const stats = useMemo(() => {
     const currentEpubChars = chapters.reduce((acc, ch) =>
@@ -146,9 +148,14 @@ const App: React.FC = () => {
     const totalChars = mode === 'epub' ? currentEpubChars : text.length;
     const estimatedTokens = Math.ceil(totalChars / 3.8);
     const totalCost = (estimatedTokens / 1000000) * 0.70;
+
+    // Stats for accumulated usage
+    const accumTokens = Math.ceil(projectCharCount / 3.8);
+    const accumCost = (accumTokens / 1000000) * 0.70;
+
     const marketCost = (totalChars / 1000) * 0.30;
-    return { totalChars, costGemini: totalCost, savings: marketCost - totalCost };
-  }, [chapters, text, mode]);
+    return { totalChars, costGemini: totalCost, savings: marketCost - totalCost, accumChars: projectCharCount, accumCost };
+  }, [chapters, text, mode, projectCharCount]);
 
   const processSegment = async (chapterId: string, segmentId: string) => {
     if (loading) return;
@@ -179,6 +186,9 @@ const App: React.FC = () => {
         emotion,
         (cur, tot) => setCurrentProgress({ current: cur, total: tot })
       );
+
+      // Successfully generated audio, update project counter
+      setProjectCharCount(prev => prev + content.length);
 
       const voiceName = VOICES.find(v => v.id === voiceId)?.name || 'Voz';
 
@@ -464,15 +474,20 @@ const App: React.FC = () => {
           <div className="lg:col-span-8 space-y-6">
             {showStats && stats.totalChars > 0 && (
               <div className="bg-slate-900 text-white rounded-2xl md:rounded-3xl p-5 md:p-6 shadow-xl animate-in slide-in-from-top duration-300">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
                   <div>
                     <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400">Volumen Narrativo</p>
                     <p className="text-xl md:text-2xl font-black mt-1">{stats.totalChars.toLocaleString()} <span className="text-[9px] md:text-[10px] opacity-40">CARACT.</span></p>
                   </div>
                   <div className="sm:border-l sm:border-slate-700/50 sm:pl-6">
-                    <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-indigo-400">Inversión API</p>
+                    <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-indigo-400">Inversión Actual</p>
                     <p className="text-xl md:text-2xl font-black mt-1 text-indigo-400">${stats.costGemini.toLocaleString('en-US', { minimumFractionDigits: 4 })}</p>
-                    <p className="text-[8px] text-slate-500 mt-1 uppercase font-bold">Nivel de Pago 1 Activo</p>
+                    <p className="text-[8px] text-slate-500 mt-1 uppercase font-bold">Estimado del Texto</p>
+                  </div>
+                  <div className="sm:border-l sm:border-slate-700/50 sm:pl-6 bg-slate-800/50 rounded-xl p-2 sm:bg-transparent sm:p-0">
+                    <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-green-400">Gasto Real Proyecto</p>
+                    <p className="text-xl md:text-2xl font-black mt-1 text-green-400">${stats.accumCost.toLocaleString('en-US', { minimumFractionDigits: 4 })}</p>
+                    <p className="text-[8px] text-slate-500 mt-1 uppercase font-bold">{stats.accumChars.toLocaleString()} Caract. Procesados</p>
                   </div>
                   <div className="bg-indigo-600/10 rounded-xl md:rounded-2xl p-3 md:p-4 border border-indigo-500/20">
                     <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-indigo-200">Ahorro Estimado</p>
