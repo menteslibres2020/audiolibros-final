@@ -102,12 +102,12 @@ export class GeminiTTSService {
     }
 
 
-    // Intentar con el modelo más reciente disponible públicamente
-    // Documentación indica que para generativelanguage.googleapis.com es imagen-3.0-generate-002
-    // Pero mantenemos ambas opciones por si acaso.
+    // Intentar con varios modelos conocidos
     const models = [
       'imagen-3.0-generate-001',
       'imagen-3.0-generate-002',
+      'imagen-3.0-capability-001', // A veces disponible
+      'image-generation-002', // Fallback a Imagen 2 para cuentas antiguas/sin acceso a 3
     ];
 
     let lastError = null;
