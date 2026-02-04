@@ -50,7 +50,8 @@ export class GeminiTTSService {
       const chunk = chunks[i];
 
       // Prompt altamente enfático en la emoción requerida
-      const prompt = `Actúa como un locutor profesional. Tu tarea primordial es narrar el siguiente texto capturando perfectamente una atmósfera ${emotion.toUpperCase()}. Cada palabra debe estar impregnada de esa emoción específica (${emotion}). No seas neutral; sé evocador y asegúrate de que el tono de voz refleje la intención emocional del contenido: ${chunk}`;
+      // Prompt highly emphatic on the required emotion
+      const prompt = `Actúa como un locutor profesional. Tu tarea primordial es narrar el siguiente texto capturando perfectamente una atmósfera ${emotion.toUpperCase()}. Cada palabra debe estar impregnada de esa emoción específica (${emotion}). No seas neutral; sé evocador y asegúrate de que el tono de voz refleje la intención emocional del contenido. MANTÉN UN VOLUMEN DE VOZ CONSTANTE Y CLARO durante toda la lectura. NO SUSURRES ni bajes el volumen al final de las frases, a menos que el texto explícitamente diga que se susurra. La claridad y la consistencia del volumen son cruciales: ${chunk}`;
 
       const fetchChunk = async (retryCount = 0): Promise<string> => {
         try {
