@@ -3,7 +3,9 @@ import { GoogleGenAI, Modality } from "@google/genai";
 import { decodeBase64, decodeAudioData, audioBufferToWavBlob, mergeAudioBuffers } from "../utils/audioUtils.ts";
 
 export class GeminiTTSService {
-  private MAX_CHARS_PER_CHUNK = 5000;
+  // Reducimos drásticamente el tamaño del chunk para evitar degradación/susurros en textos largos.
+  // 600 caracteres es un buen balance (aprox 40-60 segs) para mantener la inferencia fresca y potente.
+  private MAX_CHARS_PER_CHUNK = 600;
 
   private getAIInstance() {
     return new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -49,17 +51,40 @@ export class GeminiTTSService {
 
       const chunk = chunks[i];
 
-      // Prompt altamente enfático en la emoción requerida
-      // Prompt highly emphatic on the required emotion
-      // Prompt mejorado para consistencia, naturalidad y anti-degradación
-      const prompt = `Eres un narrador de audiolibros de clase mundial. Tu voz debe sonar 100% HUMANA, PROFUNDA y de ALTA FIDELIDAD (High Fidelity). NO suenes metálico, robótico ni lejano en ningún momento.
+      // Mapeo de estilos para "Voces Virtuales" (Variaciones de las voces base)
+      let baseVoiceName = voiceName;
+      let styleInstruction = "";
 
-Objetivo Emocional: ${emotion.toUpperCase()}. Mantén esta emoción de forma natural y sutil, sin exagerar al punto de perder la claridad.
+      switch (voiceName) {
+        // Nuevas voces masculinas solicitadas (Mapeadas a voces base con estilos específicos)
+        case 'Marcus': // Histórico
+          baseVoiceName = 'Charon';
+          styleInstruction = "Adopta el tono de un narrador de documentales históricos o epopeyas antiguas. Voz grave, pausada, solemne y con mucha autoridad académica.";
+          break;
+        case 'Orion': // Misterio/Terror
+          baseVoiceName = 'Fenrir';
+          styleInstruction = "Adopta un tono de misterio, suspense y novela negra. Voz profunda, intrigante y ligeramente rasposa, ideal para thrillers.";
+          break;
+        case 'Draco': // Fantasía/Épico
+          baseVoiceName = 'Puck'; // Puck es enérgico, bueno para aventuras
+          styleInstruction = "Adopta el tono de un narrador de aventuras épicas y fantasía heroica. Voz vibrante, dinámica y muy expresiva, como contando una gran leyenda.";
+          break;
+        default:
+          // Voces estándar
+          styleInstruction = `Tu tono debe ser profesional y de alta calidad.`;
+          break;
+      }
 
-Instrucciones de Calidad Críticas:
-1. CONSISTENCIA TOTAL: Evita que la voz se "apague" o suene "a lata" a medida que avanzas. Mantén la misma energía, timbre y calidad de estudio desde la primera hasta la última palabra.
-2. PROYECCIÓN: Mantén un volumen firme y claro. NO SUSURRES al final de las frases. Proyecta la voz como si estuvieras en un escenario.
-3. FLUIDEZ: Lee con un ritmo natural, haciendo pausas lógicas pero manteniendo el hilo narrativo vivo.
+      const prompt = `Actúa como un narrador de audiolibros DE ÉLITE.
+Objetivo: Narrar el texto con una voz 100% HUMANA, NATURAL y CONSISTENTE.
+
+Tono y Estilo Requerido: ${styleInstruction}
+Emoción General: ${emotion.toUpperCase()}.
+
+REGLAS DE ORO (ANTI-SUSURRO):
+1. MANTÉN EL VOLUMEN ALTO Y FIRME SIEMPRE. Está prohibido susurrar o desvanecer la voz al final de las oraciones.
+2. CADA PALABRA con la misma intensidad y energía que la primera. No te canses.
+3. Velocidad natural, ni muy rápido ni muy lento. Pausas respiratorias humanas.
 
 Texto a narrar:
 ${chunk}`;
@@ -73,7 +98,7 @@ ${chunk}`;
               responseModalities: [Modality.AUDIO],
               speechConfig: {
                 voiceConfig: {
-                  prebuiltVoiceConfig: { voiceName },
+                  prebuiltVoiceConfig: { voiceName: baseVoiceName },
                 },
               },
             },
