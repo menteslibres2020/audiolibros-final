@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ttsService } from './services/geminiService.ts';
+import { mergeAudioBuffers, audioBufferToWavBlob } from './utils/audioUtils.ts';
 import { epubService, EpubChapter } from './services/epubService.ts';
 import { persistenceService } from './services/persistenceService.ts';
 import VoiceSelector from './components/VoiceSelector.tsx';
@@ -26,6 +27,7 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [mergingChapterId, setMergingChapterId] = useState<string | null>(null);
   const [showStats, setShowStats] = useState(true);
   const [history, setHistory] = useState<NarrationResult[]>([]);
   const [error, setError] = useState<{ message: string, isQuota?: boolean } | null>(null);
@@ -230,6 +232,53 @@ const App: React.FC = () => {
       setLoading(false);
       setProcessingId(null);
       setCurrentProgress({ current: 0, total: 0 });
+    }
+  };
+
+  const handleDownloadChapter = async (chapter: EpubChapter) => {
+    if (!chapter.segments || chapter.segments.length === 0) return;
+    const completedSegments = chapter.segments.filter(s => s.status === 'completed' && s.audioUrl);
+
+    if (completedSegments.length === 0) {
+      alert("No hay audios generados en este capítulo.");
+      return;
+    }
+
+    if (completedSegments.length !== chapter.segments.length) {
+      if (!confirm(`Solo hay ${completedSegments.length} de ${chapter.segments.length} fragmentos narrados. ¿Deseas descargar el capítulo incompleto?`)) {
+        return;
+      }
+    }
+
+    setMergingChapterId(chapter.id);
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const buffers: AudioBuffer[] = [];
+
+      for (const seg of completedSegments) {
+        if (!seg.audioUrl) continue;
+        const response = await fetch(seg.audioUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        buffers.push(audioBuffer);
+      }
+
+      const mergedBuffer = mergeAudioBuffers(buffers, audioContext);
+      const wavBlob = audioBufferToWavBlob(mergedBuffer);
+
+      const url = URL.createObjectURL(wavBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Capitulo_${(chapter.title || 'audio').replace(/[^a-z0-9]/gi, '_').substring(0, 30)}.wav`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+    } catch (err) {
+      console.error("Error merging audio:", err);
+      alert("Error al unir los audios del capítulo. Asegúrate de que los audios estén cargados correctamente.");
+    } finally {
+      setMergingChapterId(null);
     }
   };
 
@@ -465,6 +514,19 @@ const App: React.FC = () => {
                               <h3 className="font-bold text-xs md:text-sm text-slate-800 truncate">{chapter.title}</h3>
                             </div>
                             <i className={`fa-solid fa-chevron-right text-[10px] md:text-xs transition-transform shrink-0 ml-2 ${expandedChapter === chapter.id ? 'rotate-90 text-indigo-600' : 'text-slate-200'}`}></i>
+                          </button>
+
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDownloadChapter(chapter); }}
+                            disabled={mergingChapterId === chapter.id}
+                            className="p-4 md:p-5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 transition-colors border-l border-slate-50 relative"
+                            title="Descargar Capítulo Completo (.WAV)"
+                          >
+                            {mergingChapterId === chapter.id ? (
+                              <i className="fa-solid fa-circle-notch animate-spin text-xs md:text-sm"></i>
+                            ) : (
+                              <i className="fa-solid fa-file-audio text-xs md:text-sm"></i>
+                            )}
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); deleteChapter(chapter.id); }}

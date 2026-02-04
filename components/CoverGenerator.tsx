@@ -30,7 +30,8 @@ const CoverGenerator: React.FC<CoverGeneratorProps> = ({
         setError(null);
         try {
             // Create a rich prompt
-            const prompt = `A high quality, professional book cover background art for a book titled "${title}" with emotion "${emotion}". Style: ${style}. The image should be 1:1 square. No text, no words, just the artwork. High resolution, detailed, evocative.`;
+            // Create a rich prompt - Explicitly requesting NO TEXT
+            const prompt = `Professional book cover illustration for "${title}", emotion: "${emotion}", style: ${style}. High resolution, 1:1 square. IMPORTANT: NO text, NO letters, NO characters in the image. Create only the visual background artwork. The title will be overlayed separately.`;
 
             const base64Image = await ttsService.generateImage(prompt);
             setImageData(base64Image);
