@@ -102,10 +102,10 @@ export class GeminiTTSService {
     }
 
     // Usar el Proxy configurado en Vite (local) y Vercel (prod) para evitar CORS.
-    // La ruta '/api/gemini' se redirige internamente a 'https://generativelanguage.googleapis.com'
-    const url = `/api/gemini/v1beta/models/imagen-3.0-generate-001:generateImages`;
+    // Cambiado a :predict que es el endpoint estándar para REST API de Imagen/Vertex/Gemini
+    const url = `/api/gemini/v1beta/models/imagen-3.0-generate-001:predict`;
 
-    console.log("Generando imagen vía Proxy (/api/gemini)...");
+    console.log("Generando imagen vía Proxy (/api/gemini):", url);
 
     try {
       const response = await fetch(url, {
@@ -115,11 +115,15 @@ export class GeminiTTSService {
           "x-goog-api-key": apiKey,
         },
         body: JSON.stringify({
-          prompt: prompt,
-          number_of_images: 1,
-          aspect_ratio: "1:1",
-          safety_filter_level: "block_medium_and_above",
-          person_generation: "allow_adult",
+          instances: [
+            { prompt: prompt }
+          ],
+          parameters: {
+            sampleCount: 1,
+            aspectRatio: "1:1",
+            safetySetting: "block_medium_and_above",
+            personGeneration: "allow_adult",
+          }
         }),
       });
 
@@ -130,13 +134,35 @@ export class GeminiTTSService {
       }
 
       const data = await response.json();
-      if (data.images && data.images.length > 0 && data.images[0].image64) {
-        return `data:image/jpeg;base64,${data.images[0].image64}`;
+
+      let base64Image = null;
+
+      // Intentar parsear respuesta estándar de :predict
+      if (data.predictions && data.predictions.length > 0) {
+        const prediction = data.predictions[0];
+        // Formato Vertex/Gemini suele devolver bytesBase64Encoded dentro de un objeto
+        if (prediction.bytesBase64Encoded) {
+          base64Image = prediction.bytesBase64Encoded;
+        } else if (typeof prediction === 'string') {
+          // O a veces directamente el string
+          base64Image = prediction;
+        }
       }
-      throw new Error("La API no devolvió ninguna imagen.");
+      // Fallback por si acaso devuelve el formato anterior o diferente
+      else if (data.images && data.images.length > 0 && data.images[0].image64) {
+        base64Image = data.images[0].image64;
+      }
+
+      if (base64Image) {
+        // Asegurarse de que tiene el prefijo
+        return base64Image.startsWith('data:') ? base64Image : `data:image/jpeg;base64,${base64Image}`;
+      }
+
+      console.error("Respuesta inesperada API:", data);
+      throw new Error("La API no devolvió ninguna imagen en el formato esperado.");
     } catch (error: any) {
       console.error("Imagen Error Completo:", error);
-      throw new Error("Error generando imagen. Es posible que el Proxy de desarrollo esté saturado o la API Key no tenga permisos. " + error.message);
+      throw new Error("Error generando imagen: " + error.message);
     }
   }
 }
