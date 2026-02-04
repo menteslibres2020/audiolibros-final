@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: 'Helvetica', sans-serif;
+            background-color: #F1F5F9;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 40px auto;
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background: #0F172A;
+            padding: 40px 0;
+            text-align: center;
+        }
+
+        .content {
+            padding: 40px;
+            text-align: center;
+            color: #334155;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 800;
+            margin: 0 0 16px 0;
+            color: #0F172A;
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #64748B;
+            margin-bottom: 32px;
+        }
+
+        .btn {
+            display: inline-block;
+            background: #4F46E5;
+            color: white;
+            padding: 16px 32px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            background: #4338CA;
+            transform: translateY(-1px);
+        }
+
+        .footer {
+            padding: 24px;
+            text-align: center;
+            font-size: 12px;
+            color: #94A3B8;
+            background: #F8FAFC;
+            border-top: 1px solid #E2E8F0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div style="font-size:40px;">🎙️</div>
+        </div>
+        <div class="content">
+            <h1>Confirma tu Email</h1>
+            <p>Bienvenido a <strong>Voces Libres Studio</strong>. Para mantener segura tu cuenta y acceder al estudio de
+                narración, por favor confirma tu dirección de correo.</p>
+            <a href="{{ .ConfirmationURL }}" class="btn">Confirmar Cuenta</a>
+        </div>
+        <div class="footer">
+            © 2026 Voces Libres Studio • <a href="#" style="color:#94A3B8;text-decoration:none;">Términos y
+                Privacidad</a>
+        </div>
+    </div>
+</body>
+
+</html>
