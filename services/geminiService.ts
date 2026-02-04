@@ -102,11 +102,11 @@ export class GeminiTTSService {
     }
 
 
-    // Intentar con varios modelos conocidos - EL USUARIO CONFIRMA GEMINI 2.5 FLASH IMAGE
+    // Intentar con varios modelos conocidos - GEMINI 2.5 PRIORIZADO
     const models = [
-      'gemini-2.0-flash-image', // Variantes comunes
-      'gemini-2.5-flash-image', // El nombre oficial más reciente
-      'gemini-2.0-flash-image-preview', // Preview version
+      'gemini-2.5-flash-image', // SOLICITADO POR EL USUARIO (Oficial)
+      'gemini-2.0-flash-image',
+      'gemini-2.0-flash-image-preview',
       'imagen-3.0-generate-001',
       'imagen-3.0-generate-002',
     ];
