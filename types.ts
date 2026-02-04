@@ -18,4 +18,5 @@ export interface NarrationResult {
   timestamp: number;
   text: string;
   voiceName: string;
+  storagePath?: string;
 }

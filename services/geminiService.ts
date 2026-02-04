@@ -93,6 +93,41 @@ export class GeminiTTSService {
     const wavBlob = audioBufferToWavBlob(fullBuffer);
     return URL.createObjectURL(wavBlob);
   }
+
+  async generateImage(prompt: string): Promise<string> {
+    const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateImages?key=${apiKey}`;
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: prompt,
+          number_of_images: 1,
+          aspect_ratio: "1:1",
+          safety_filter_level: "block_medium_and_above",
+          person_generation: "allow_adult",
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Error generando imagen: ${response.status} ${errText}`);
+      }
+
+      const data = await response.json();
+      if (data.images && data.images.length > 0 && data.images[0].image64) {
+        return `data:image/jpeg;base64,${data.images[0].image64}`;
+      }
+      throw new Error("No se recibió imagen de la API.");
+    } catch (error) {
+      console.error("Imagen Error:", error);
+      throw error;
+    }
+  }
 }
 
 export const ttsService = new GeminiTTSService();

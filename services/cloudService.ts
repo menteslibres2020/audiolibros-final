@@ -84,8 +84,6 @@ export const cloudService = {
                     .getPublicUrl(row.audio_path);
 
                 const voiceName = VOICES.find(v => v.id === row.voice_id)?.name || row.voice_id;
-
-                // Ensure voiceName is a string, even if lookup fails or data is weird
                 const finalVoiceName = typeof voiceName === 'string' ? voiceName : 'Voz Desconocida';
 
                 return {
@@ -93,12 +91,39 @@ export const cloudService = {
                     audioUrl: publicUrl,
                     timestamp: new Date(row.created_at).getTime(),
                     text: row.text_content || '',
-                    voiceName: finalVoiceName
+                    voiceName: finalVoiceName,
+                    storagePath: row.audio_path // Keep track of path for deletion
                 };
             });
         } catch (error) {
             console.error('Fetch Cloud Error:', error);
             return [];
+        }
+    },
+
+    async deleteNarration(id: string, storagePath?: string): Promise<boolean> {
+        try {
+            // 1. Delete from DB
+            const { error: dbError } = await supabase
+                .from('narrations')
+                .delete()
+                .eq('id', id);
+
+            if (dbError) throw dbError;
+
+            // 2. Delete from Storage (if path known)
+            if (storagePath) {
+                const { error: storageError } = await supabase.storage
+                    .from('narrations')
+                    .remove([storagePath]);
+
+                if (storageError) console.warn("Storage delete warning:", storageError);
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Delete Error:', error);
+            return false;
         }
     }
 };

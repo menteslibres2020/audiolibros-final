@@ -15,6 +15,7 @@ import SubscriptionGate from './components/SubscriptionGate';
 import { stripeService } from './services/stripeService';
 import { cloudService } from './services/cloudService';
 import ResetPasswordModal from './components/ResetPasswordModal';
+import CoverGenerator from './components/CoverGenerator';
 
 const App: React.FC = () => {
   const [isReady, setIsReady] = useState(false);
@@ -42,6 +43,7 @@ const App: React.FC = () => {
   const [isPro, setIsPro] = useState(false);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showCoverGenerator, setShowCoverGenerator] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -303,6 +305,22 @@ const App: React.FC = () => {
     return <Auth onAuthSuccess={() => { }} />;
   }
 
+  const handleDeleteNarration = async (id: string, storagePath?: string) => {
+    if (confirm("¿Estás seguro de eliminar este audio? Esta acción no se puede deshacer de la nube.")) {
+      // Optimistic update
+      setHistory(prev => prev.filter(item => item.id !== id));
+
+      const success = await cloudService.deleteNarration(id, storagePath);
+      if (!success) {
+        alert("Hubo un error al eliminar de la nube, pero se ha ocultado localmente.");
+      } else {
+        // Update local persistence
+        const validHistory = history.filter(item => item.id !== id);
+        persistenceService.saveState({ history: validHistory }).catch(console.error);
+      }
+    }
+  };
+
   return (
     <SubscriptionGate userEmail={session.user.email!} isPro={isPro}>
       <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
@@ -348,6 +366,12 @@ const App: React.FC = () => {
                 <span className="hidden sm:inline">Libro Maestro</span>
               </button>
               <div className="w-px h-6 bg-slate-200 mx-1 md:mx-2 shrink-0"></div>
+
+              <button onClick={() => setShowCoverGenerator(true)} className="px-3 md:px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-[11px] md:text-xs font-bold shadow-md hover:shadow-lg transition-all whitespace-nowrap flex items-center gap-2" title="Crear Portada IA">
+                <i className="fa-solid fa-wand-magic-sparkles"></i>
+                <span className="hidden sm:inline">Portada IA</span>
+              </button>
+
               <button onClick={() => setShowStats(!showStats)} className={`w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-lg transition-colors shrink-0 ${showStats ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`} title="Panel de Monitor"><i className="fa-solid fa-chart-column text-xs md:text-base"></i></button>
               <button onClick={() => fileInputRef.current?.click()} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 shrink-0" title="Importar ePub"><i className="fa-solid fa-file-import text-xs md:text-base"></i></button>
               <input type="file" ref={fileInputRef} className="hidden" accept=".epub" onChange={handleEpubUpload} />
@@ -562,7 +586,7 @@ const App: React.FC = () => {
                       <p className="text-[10px] font-bold uppercase tracking-widest">Sin producciones</p>
                     </div>
                   ) : (
-                    history.map((item) => <HistoryItem key={item.id} item={item} />)
+                    history.map((item) => <HistoryItem key={item.id} item={item} onDelete={handleDeleteNarration} />)
                   )}
                 </div>
               </div>
