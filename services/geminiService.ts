@@ -101,18 +101,18 @@ export class GeminiTTSService {
       throw new Error("API Key no configurada.");
     }
 
-    // Usar un proxy CORS público para desarrollo local, ya que la API REST de Imagen 3 no soporta llamadas directas desde navegador por ahora.
-    // En producción, esto debería hacerse desde el backend (Supabase Edge Function).
-    const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateImages?key=${apiKey}`;
-    const proxyUrl = `https://corsproxy.io/?` + encodeURIComponent(baseUrl);
+    // Usar el Proxy configurado en Vite (local) y Vercel (prod) para evitar CORS.
+    // La ruta '/api/gemini' se redirige internamente a 'https://generativelanguage.googleapis.com'
+    const url = `/api/gemini/v1beta/models/imagen-3.0-generate-001:generateImages`;
 
-    console.log("Generando imagen con proxy...");
+    console.log("Generando imagen vía Proxy (/api/gemini)...");
 
     try {
-      const response = await fetch(proxyUrl, {
+      const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
         },
         body: JSON.stringify({
           prompt: prompt,
