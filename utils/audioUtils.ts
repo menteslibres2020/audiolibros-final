@@ -56,9 +56,9 @@ export function mergeAudioBuffers(buffers: AudioBuffer[], ctx: AudioContext): Au
 export function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
   const numChannels = buffer.numberOfChannels;
   const sampleRate = buffer.sampleRate;
-  const format = 1; // PCM
-  const bitDepth = 16;
-  
+  const format = 3; // IEEE Float
+  const bitDepth = 32;
+
   const blockAlign = numChannels * bitDepth / 8;
   const byteRate = sampleRate * blockAlign;
   const dataSize = buffer.length * blockAlign;
@@ -78,7 +78,7 @@ export function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
   writeString(8, 'WAVE');
   writeString(12, 'fmt ');
   view.setUint32(16, 16, true);
-  view.setUint16(20, format, true);
+  view.setUint16(20, format, true); // Format 3 = Float
   view.setUint16(22, numChannels, true);
   view.setUint32(24, sampleRate, true);
   view.setUint32(28, byteRate, true);
@@ -87,10 +87,10 @@ export function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
   writeString(36, 'data');
   view.setUint32(40, dataSize, true);
 
-  const channelData = buffer.getChannelData(0);
+  const channelData = buffer.getChannelData(0); // Assuming mono for now based on service
   for (let i = 0; i < channelData.length; i++) {
-    const sample = Math.max(-1, Math.min(1, channelData[i]));
-    view.setInt16(44 + i * 2, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+    // Write directly as Float32, no conversion needed, ensuring exact 1:1 fidelity from model output
+    view.setFloat32(44 + i * 4, channelData[i], true);
   }
 
   return new Blob([arrayBuffer], { type: 'audio/wav' });

@@ -586,7 +586,9 @@ const App: React.FC = () => {
                             {chapter.segments?.map((seg, sIdx) => (
                               <div key={seg.id} className={`bg-slate-50 p-4 md:p-5 rounded-xl md:rounded-2xl border transition-all ${processingId === seg.id ? 'border-indigo-500 ring-2 ring-indigo-100 bg-indigo-50/30' : 'border-slate-200 hover:border-indigo-200'}`}>
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">FRAGMENTO {sIdx + 1}</span>
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                    FRAGMENTO {sIdx + 1} <span className="text-slate-300 mx-1">|</span> {seg.content.length.toLocaleString()} CARACT.
+                                  </span>
 
                                   <div className="flex items-center gap-2">
                                     {editingSegmentId === seg.id ? (
