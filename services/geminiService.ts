@@ -98,21 +98,21 @@ export class GeminiTTSService {
     const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      console.error("API Key faltante en generateImage");
-      throw new Error("API Key no configurada. Revisa tu archivo .env");
+      throw new Error("API Key no configurada.");
     }
 
-    // Intentar mover la API Key al header 'x-goog-api-key' para evitar problemas de CORS con query params en algunos navegadores
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateImages`;
+    // Usar un proxy CORS público para desarrollo local, ya que la API REST de Imagen 3 no soporta llamadas directas desde navegador por ahora.
+    // En producción, esto debería hacerse desde el backend (Supabase Edge Function).
+    const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateImages?key=${apiKey}`;
+    const proxyUrl = `https://corsproxy.io/?` + encodeURIComponent(baseUrl);
 
-    console.log("Generando imagen con prompt:", prompt.substring(0, 50) + "...");
+    console.log("Generando imagen con proxy...");
 
     try {
-      const response = await fetch(url, {
+      const response = await fetch(proxyUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
         },
         body: JSON.stringify({
           prompt: prompt,
@@ -136,10 +136,7 @@ export class GeminiTTSService {
       throw new Error("La API no devolvió ninguna imagen.");
     } catch (error: any) {
       console.error("Imagen Error Completo:", error);
-      if (error.message === "Failed to fetch") {
-        throw new Error("Error de Red (CORS/Bloqueo). Verifica tu conexión o si la API Key tiene permisos para 'Generative Language API'.");
-      }
-      throw error;
+      throw new Error("Error generando imagen. Es posible que el Proxy de desarrollo esté saturado o la API Key no tenga permisos. " + error.message);
     }
   }
 }
