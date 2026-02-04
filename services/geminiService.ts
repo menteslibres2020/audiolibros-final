@@ -51,7 +51,18 @@ export class GeminiTTSService {
 
       // Prompt altamente enfático en la emoción requerida
       // Prompt highly emphatic on the required emotion
-      const prompt = `Actúa como un locutor profesional. Tu tarea primordial es narrar el siguiente texto capturando perfectamente una atmósfera ${emotion.toUpperCase()}. Cada palabra debe estar impregnada de esa emoción específica (${emotion}). No seas neutral; sé evocador y asegúrate de que el tono de voz refleje la intención emocional del contenido. MANTÉN UN VOLUMEN DE VOZ CONSTANTE Y CLARO durante toda la lectura. NO SUSURRES ni bajes el volumen al final de las frases, a menos que el texto explícitamente diga que se susurra. La claridad y la consistencia del volumen son cruciales: ${chunk}`;
+      // Prompt mejorado para consistencia, naturalidad y anti-degradación
+      const prompt = `Eres un narrador de audiolibros de clase mundial. Tu voz debe sonar 100% HUMANA, PROFUNDA y de ALTA FIDELIDAD (High Fidelity). NO suenes metálico, robótico ni lejano en ningún momento.
+
+Objetivo Emocional: ${emotion.toUpperCase()}. Mantén esta emoción de forma natural y sutil, sin exagerar al punto de perder la claridad.
+
+Instrucciones de Calidad Críticas:
+1. CONSISTENCIA TOTAL: Evita que la voz se "apague" o suene "a lata" a medida que avanzas. Mantén la misma energía, timbre y calidad de estudio desde la primera hasta la última palabra.
+2. PROYECCIÓN: Mantén un volumen firme y claro. NO SUSURRES al final de las frases. Proyecta la voz como si estuvieras en un escenario.
+3. FLUIDEZ: Lee con un ritmo natural, haciendo pausas lógicas pero manteniendo el hilo narrativo vivo.
+
+Texto a narrar:
+${chunk}`;
 
       const fetchChunk = async (retryCount = 0): Promise<string> => {
         try {
