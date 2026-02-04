@@ -56,18 +56,18 @@ export class GeminiTTSService {
       let styleInstruction = "";
 
       switch (voiceName) {
-        // Nuevas voces masculinas solicitadas (Mapeadas a voces base con estilos específicos)
-        case 'Marcus': // Histórico
-          baseVoiceName = 'Charon';
-          styleInstruction = "Adopta el tono de un narrador de documentales históricos o epopeyas antiguas. Voz grave, pausada, solemne y con mucha autoridad académica.";
+        // Nuevas voces masculinas (Mapeadas a voces base con estilos específicos)
+        case 'Ignacio': // Antes Marcus
+          baseVoiceName = 'Charon'; // Charon es grave
+          styleInstruction = "IMPORTANTE: Tu voz debe sonar como la de un HOMBRE MAYOR (60-70 años), sabio y con mucha experiencia. Tono grave, pausado, extremadamente solemne y académico. Piensa en el narrador de un documental histórico de prestigio.";
           break;
-        case 'Orion': // Misterio/Terror
-          baseVoiceName = 'Fenrir';
-          styleInstruction = "Adopta un tono de misterio, suspense y novela negra. Voz profunda, intrigante y ligeramente rasposa, ideal para thrillers.";
+        case 'Vicente': // Antes Orion
+          baseVoiceName = 'Fenrir'; // Fenrir es autoritario
+          styleInstruction = "IMPORTANTE: Tu voz debe ser PROFUNDA, RASPOSA y MISTERIOSA. Tono bajo, estilo 'Noir' o detective. Narración intrigante, pausada y con mucho suspenso (pero con volumen firme).";
           break;
-        case 'Draco': // Fantasía/Épico
-          baseVoiceName = 'Puck'; // Puck es enérgico, bueno para aventuras
-          styleInstruction = "Adopta el tono de un narrador de aventuras épicas y fantasía heroica. Voz vibrante, dinámica y muy expresiva, como contando una gran leyenda.";
+        case 'Dante': // Antes Draco
+          baseVoiceName = 'Puck'; // Puck es enérgico
+          styleInstruction = "IMPORTANTE: Tu voz debe ser VIBRANTE, ÉPICA y HEROICA. Tono de narrador de tráiler de película de acción o fantasía. Mucha energía, dicción perfecta y teatral.";
           break;
         default:
           // Voces estándar

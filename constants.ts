@@ -8,10 +8,10 @@ export const VOICES: VoiceOption[] = [
   { id: 'Zephyr', name: 'Julieta', description: 'Voz suave y calmada', gender: 'female' },
   { id: 'Fenrir', name: 'Santiago', description: 'Voz autoritaria y clara', gender: 'male' },
   { id: 'Aoede', name: 'Milagros', description: 'Narradora potente y dramática', gender: 'female' },
-  // Voces Virtuales (Estilos Específicos)
-  { id: 'Draco', name: 'Draco', description: 'Épico y Fantasía (Aventuras)', gender: 'male' },
-  { id: 'Marcus', name: 'Marcus', description: 'Documental e Historia (Solemne)', gender: 'male' },
-  { id: 'Orion', name: 'Orión', description: 'Misterio y Crimen (Profundo)', gender: 'male' },
+  // Voces Especiales (Nuevas)
+  { id: 'Dante', name: 'Dante', description: 'Narrador Épico (Aventuras y Fantasía)', gender: 'male' },
+  { id: 'Ignacio', name: 'Ignacio', description: 'Voz Mayor y Solemne (Historia)', gender: 'male' },
+  { id: 'Vicente', name: 'Vicente', description: 'Voz Intrigante (Thriller y Misterio)', gender: 'male' },
 ];
 
 export const EMOTIONS = [
