@@ -51,40 +51,70 @@ export class GeminiTTSService {
 
       const chunk = chunks[i];
 
-      // Mapeo de estilos para "Voces Virtuales" (Variaciones de las voces base)
-      let baseVoiceName = voiceName;
+      // Mapeo de estilos para el NUEVO ELENCO (9 Voces)
+      let baseVoiceName = 'Fenrir'; // Default fallback
       let styleInstruction = "";
 
       switch (voiceName) {
-        // Nuevas voces masculinas (Mapeadas a voces base con estilos específicos)
-        case 'Ignacio': // Antes Marcus
-          baseVoiceName = 'Charon'; // Charon es grave
-          styleInstruction = "IMPORTANTE: Tu voz debe sonar como la de un HOMBRE MAYOR (60-70 años), sabio y con mucha experiencia. Tono grave, pausado, extremadamente solemne y académico. Piensa en el narrador de un documental histórico de prestigio.";
+        // --- FEMENINAS ---
+        case 'Sofia': // Base: Zephyr (Suave)
+          baseVoiceName = 'Zephyr';
+          styleInstruction = "Voz FEMENINA suave, cálida, empática y maternal. Tono reconfortante, ideal para cuentos o romance. Volumen suave pero CLARO.";
           break;
-        case 'Vicente': // Antes Orion
-          baseVoiceName = 'Fenrir'; // Fenrir es autoritario
-          styleInstruction = "IMPORTANTE: Tu voz debe ser PROFUNDA, RASPOSA y MISTERIOSA. Tono bajo, estilo 'Noir' o detective. Narración intrigante, pausada y con mucho suspenso (pero con volumen firme).";
+        case 'Valentina': // Base: Kore (Equilibrada)
+          baseVoiceName = 'Kore';
+          styleInstruction = "Voz FEMENINA profesional, objetiva, periodística y directa. Dicción perfecta, tono serio y confiable. Estilo informativo.";
           break;
-        case 'Dante': // Antes Draco
-          baseVoiceName = 'Puck'; // Puck es enérgico
-          styleInstruction = "IMPORTANTE: Tu voz debe ser VIBRANTE, ÉPICA y HEROICA. Tono de narrador de tráiler de película de acción o fantasía. Mucha energía, dicción perfecta y teatral.";
+        case 'Camila': // Base: Aoede (Expresiva)
+          baseVoiceName = 'Aoede';
+          styleInstruction = "Voz FEMENINA vibrante, dramática y llena de vida. Actuación teatral intensa, mucha variabilidad emocional pero siempre con volumen firme.";
           break;
+
+        // --- MASCULINAS ---
+        case 'Mateo': // Base: Puck (Enérgico)
+          baseVoiceName = 'Puck';
+          styleInstruction = "Voz MASCULINA juvenil, rápida, dinámica y entusiasta. Tono fresco, moderno, estilo youtuber o amigo cercano.";
+          break;
+        case 'Diego': // Base: Fenrir (Autoritario)
+          baseVoiceName = 'Fenrir';
+          styleInstruction = "Voz MASCULINA estándar de narrador de libros. Equilibrada, firme, masculina y confiable. Tono medio, perfecto para literatura general.";
+          break;
+        case 'Alejandro': // Base: Charon (Profundo)
+          baseVoiceName = 'Charon';
+          styleInstruction = "Voz MASCULINA muy grave, profunda y resonante. Voz de bajo, con mucho cuerpo y presencia. Impactante.";
+          break;
+        case 'Leonardo': // Base: Fenrir (Heroico)
+          baseVoiceName = 'Fenrir';
+          styleInstruction = "Voz MASCULINA épica, heroica y motivacional. Proyecta mucha seguridad, fuerza y liderazgo. Estilo cinematográfico de acción.";
+          break;
+        case 'Ricardo': // Base: Charon (Anciano)
+          baseVoiceName = 'Charon';
+          styleInstruction = "Voz MASCULINA de hombre anciano (65+ años), sabio, pausado y reflexivo. Voz con textura de edad, solemne y académica. NO TIEMBLA, solo suena mayor.";
+          break;
+        case 'Gabriel': // Base: Fenrir (Misterio)
+          baseVoiceName = 'Fenrir';
+          styleInstruction = "Voz MASCULINA intrigante, 'Noir' y de suspenso. Levemente rasposa (whiskey voice) pero POTENTE. Estilo de detective privado. NO susurres, solo baja el tono.";
+          break;
+
         default:
-          // Voces estándar
-          styleInstruction = `Tu tono debe ser profesional y de alta calidad.`;
+          baseVoiceName = 'Fenrir';
+          styleInstruction = "Voz profesional y clara. Volumen constante.";
           break;
       }
 
-      const prompt = `Actúa como un narrador de audiolibros DE ÉLITE.
-Objetivo: Narrar el texto con una voz 100% HUMANA, NATURAL y CONSISTENTE.
+      const prompt = `Rol: Eres el MEJOR narrador de audiolibros del mundo.
+Objetivo: Narrar el texto con CALIDAD DE ESTUDIO, sin errores y sin efectos extraños.
 
-Tono y Estilo Requerido: ${styleInstruction}
-Emoción General: ${emotion.toUpperCase()}.
+TU PERFIL DE VOZ:
+${styleInstruction}
 
-REGLAS DE ORO (ANTI-SUSURRO):
-1. MANTÉN EL VOLUMEN ALTO Y FIRME SIEMPRE. Está prohibido susurrar o desvanecer la voz al final de las oraciones.
-2. CADA PALABRA con la misma intensidad y energía que la primera. No te canses.
-3. Velocidad natural, ni muy rápido ni muy lento. Pausas respiratorias humanas.
+Emoción Requerida: ${emotion.toUpperCase()}.
+
+REGLAS ABSOLUTAS (PROHIBIDO ROMPERLAS):
+1. PROHIBIDO SUSURRAR: Bajo ninguna circunstancia susurres, a menos que el texto diga explícitamente "susurró". El usuario ODIA los susurros. Mantén la voz PLENA y SONORA.
+2. VOLUMEN CONSTANTE: No bajes el volumen al final de las frases. Mantén la misma potencia de voz desde la primera hasta la última palabra del fragmento.
+3. ANTI-LATA: Usa tu registro más rico y resonante. Evita sonar metálico o telefónico. Queremos "High Fidelity".
+4. NATURALIDAD: Habla como un ser humano real, conecta las frases con fluidez.
 
 Texto a narrar:
 ${chunk}`;

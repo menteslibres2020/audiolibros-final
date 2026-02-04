@@ -1,17 +1,21 @@
 
 import { VoiceOption } from './types';
 
+// ELENCO COMPLETAMENTE RENOVADO: 9 Voces (3 Femeninas, 6 Masculinas)
+// Nombres Latinos y Tonos Distintivos.
 export const VOICES: VoiceOption[] = [
-  { id: 'Kore', name: 'Martina', description: 'Voz equilibrada y profesional', gender: 'female' },
-  { id: 'Puck', name: 'Bautista', description: 'Voz juvenil y enérgica', gender: 'male' },
-  { id: 'Charon', name: 'Facundo', description: 'Voz madura y profunda', gender: 'male' },
-  { id: 'Zephyr', name: 'Julieta', description: 'Voz suave y calmada', gender: 'female' },
-  { id: 'Fenrir', name: 'Santiago', description: 'Voz autoritaria y clara', gender: 'male' },
-  { id: 'Aoede', name: 'Milagros', description: 'Narradora potente y dramática', gender: 'female' },
-  // Voces Especiales (Nuevas)
-  { id: 'Dante', name: 'Dante', description: 'Narrador Épico (Aventuras y Fantasía)', gender: 'male' },
-  { id: 'Ignacio', name: 'Ignacio', description: 'Voz Mayor y Solemne (Historia)', gender: 'male' },
-  { id: 'Vicente', name: 'Vicente', description: 'Voz Intrigante (Thriller y Misterio)', gender: 'male' },
+  // --- FEMENINAS (3) ---
+  { id: 'Sofia', name: 'Sofía', description: 'Suave, empática y calmada (Romance/Infantil)', gender: 'female' },
+  { id: 'Valentina', name: 'Valentina', description: 'Profesional, periodística y clara (No Ficción)', gender: 'female' },
+  { id: 'Camila', name: 'Camila', description: 'Dramática, expresiva y teatral (Ficción)', gender: 'female' },
+
+  // --- MASCULINAS (6) ---
+  { id: 'Mateo', name: 'Mateo', description: 'Juvenil, enérgico y rápido (Aventuras)', gender: 'male' },
+  { id: 'Diego', name: 'Diego', description: 'Estándar, firme y confiable (Clásicos)', gender: 'male' },
+  { id: 'Alejandro', name: 'Alejandro', description: 'Profunda, grave y de impacto (Thriller)', gender: 'male' },
+  { id: 'Leonardo', name: 'Leonardo', description: 'Heroica, vibrante y motivacional (Épica)', gender: 'male' },
+  { id: 'Ricardo', name: 'Ricardo', description: 'Voz de Anciano Sabio y Solemne (Historia)', gender: 'male' },
+  { id: 'Gabriel', name: 'Gabriel', description: 'Misteriosa y Rasposa (Novela Negra)', gender: 'male' },
 ];
 
 export const EMOTIONS = [
@@ -22,5 +26,5 @@ export const EMOTIONS = [
   "Misterioso",
   "Informativo",
   "Emocionado",
-  "Susurrante"
+  "Susurrante" // Mantener opción por compatibilidad, pero el prompt por defecto prohíbe susurar
 ];
