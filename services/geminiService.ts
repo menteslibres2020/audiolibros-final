@@ -96,7 +96,16 @@ export class GeminiTTSService {
 
   async generateImage(prompt: string): Promise<string> {
     const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      console.error("API Key faltante en generateImage");
+      throw new Error("API Key no configurada. Revisa tu archivo .env");
+    }
+
+    // Usar el modelo imagen-3.0-generate-001 que es el estándar actual para beta
     const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateImages?key=${apiKey}`;
+
+    console.log("Generando imagen con prompt:", prompt.substring(0, 50) + "...");
 
     try {
       const response = await fetch(url, {
@@ -115,16 +124,20 @@ export class GeminiTTSService {
 
       if (!response.ok) {
         const errText = await response.text();
-        throw new Error(`Error generando imagen: ${response.status} ${errText}`);
+        console.error("API Error Body:", errText);
+        throw new Error(`Error API Imagen (${response.status}): ${errText.substring(0, 100)}`);
       }
 
       const data = await response.json();
       if (data.images && data.images.length > 0 && data.images[0].image64) {
         return `data:image/jpeg;base64,${data.images[0].image64}`;
       }
-      throw new Error("No se recibió imagen de la API.");
-    } catch (error) {
-      console.error("Imagen Error:", error);
+      throw new Error("La API no devolvió ninguna imagen.");
+    } catch (error: any) {
+      console.error("Imagen Error Completo:", error);
+      if (error.message === "Failed to fetch") {
+        throw new Error("Error de Red (CORS/Bloqueo). Verifica tu conexión o si la API Key tiene permisos para 'Generative Language API'.");
+      }
       throw error;
     }
   }
