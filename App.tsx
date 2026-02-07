@@ -6,6 +6,7 @@ import { epubService, EpubChapter } from './services/epubService.ts';
 import { persistenceService } from './services/persistenceService.ts';
 import VoiceSelector from './components/VoiceSelector.tsx';
 import HistoryItem from './components/HistoryItem.tsx';
+import AudioMerger from './components/AudioMerger.tsx';
 import { VOICES, EMOTIONS } from './constants.ts';
 import { NarrationResult } from './types.ts';
 import JSZip from 'jszip';
@@ -35,7 +36,7 @@ const App: React.FC = () => {
   const [projectCharCount, setProjectCharCount] = useState(0);
   const [error, setError] = useState<{ message: string, isQuota?: boolean } | null>(null);
 
-  const [mode, setMode] = useState<'text' | 'epub'>('text');
+  const [mode, setMode] = useState<'text' | 'epub' | 'merger'>('text');
   const [bookTitle, setBookTitle] = useState('');
   const [bookAuthor, setBookAuthor] = useState('');
   const [chapters, setChapters] = useState<EpubChapter[]>([]);
@@ -453,6 +454,13 @@ const App: React.FC = () => {
                 <i className="fa-solid fa-book sm:hidden"></i>
                 <span className="hidden sm:inline">Libro Maestro</span>
               </button>
+              <button
+                onClick={() => setMode('merger')}
+                className={`px-3 md:px-4 py-2 rounded-lg text-[11px] md:text-xs font-bold transition-all whitespace-nowrap ${mode === 'merger' ? 'bg-purple-50 text-purple-600' : 'text-slate-500 hover:bg-slate-100'}`}
+              >
+                <i className="fa-solid fa-layer-group sm:hidden"></i>
+                <span className="hidden sm:inline">Fusión Audio</span>
+              </button>
               <div className="w-px h-6 bg-slate-200 mx-1 md:mx-2 shrink-0"></div>
 
               <button onClick={() => setShowCoverGenerator(true)} className="px-3 md:px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-[11px] md:text-xs font-bold shadow-md hover:shadow-lg transition-all whitespace-nowrap flex items-center gap-2" title="Crear Portada IA">
@@ -509,7 +517,9 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {mode === 'text' ? (
+            {mode === 'merger' ? (
+              <AudioMerger />
+            ) : mode === 'text' ? (
               <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm space-y-4">
                 <input type="text" value={projectTitle} onChange={(e) => setProjectTitle(e.target.value)} placeholder="Título de la obra o capítulo..." className="w-full px-4 md:px-5 py-3 md:py-4 rounded-xl md:rounded-2xl bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none font-bold text-sm md:text-base" />
                 <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Pega aquí el texto que deseas narrar..." className="w-full h-64 md:h-80 p-4 md:p-6 rounded-xl md:rounded-2xl bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none font-medium resize-none custom-scrollbar text-sm md:text-base" />

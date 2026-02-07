@@ -124,9 +124,10 @@ const CoverGenerator: React.FC<CoverGeneratorProps> = ({
     }, [imageData, title, author]);
 
     const downloadCover = () => {
+        if (!canvasRef.current) return;
         const link = document.createElement('a');
-        link.download = `Portada-${title.replace(/\s+/g, '-')}.png`;
-        link.href = canvasRef.current?.toDataURL() || '';
+        link.download = `cover1.webp`;
+        link.href = canvasRef.current.toDataURL('image/webp', 0.9);
         link.click();
     };
 
