@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { audioBufferToWavBlob } from '../utils/audioUtils';
+import { audioBufferToWavBlob, resampleBuffer } from '../utils/audioUtils';
 import { mixAudioWithDucking, generateAmbientPad } from '../utils/audioMixerUtils';
 
 const MusicStudio: React.FC = () => {
@@ -37,27 +37,47 @@ const MusicStudio: React.FC = () => {
         setIsProcessing(true);
 
         try {
-            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 44100 });
+            // 1. Create a temporary context to extract data
+            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
 
-            // 1. Decode Voice
+            // 2. Decode Voice
             const voiceArrayBuffer = await voiceFile.arrayBuffer();
-            const voiceBuffer = await audioContext.decodeAudioData(voiceArrayBuffer);
+            const rawVoiceBuffer = await audioContext.decodeAudioData(voiceArrayBuffer);
 
-            // 2. Prepare Music Buffer
+            // Use Voice Sample Rate as the master rate (safe default: 24000 or 44100)
+            const targetRate = rawVoiceBuffer.sampleRate; // Respect original voice rate
+            const voiceBuffer = rawVoiceBuffer; // Already at target rate
+
+            // 3. Prepare Music Buffer
             let musicBuffer: AudioBuffer;
 
             if (musicFile) {
                 const musicArrayBuffer = await musicFile.arrayBuffer();
-                musicBuffer = await audioContext.decodeAudioData(musicArrayBuffer);
+                const rawMusicBuffer = await audioContext.decodeAudioData(musicArrayBuffer);
+                // Resample music to match voice rate
+                musicBuffer = await resampleBuffer(rawMusicBuffer, targetRate);
             } else if (generatedMood) {
-                // Generate Ambient Pad (Duration = Voice Duration + 5 seconds tail)
-                musicBuffer = generateAmbientPad(audioContext, voiceBuffer.duration + 5, generatedMood);
+                // Generate Ambient Pad at voice sample rate
+                // We need to create a context at target rate for generation or use current and resample.
+                // generateAmbientPad uses provided context's sample rate.
+                // Let's ensure consistency.
+                const genContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: targetRate });
+                musicBuffer = generateAmbientPad(genContext, voiceBuffer.duration + 5, generatedMood);
+                // If genContext didn't respect targetRate (browser lock), resample as safety
+                if (musicBuffer.sampleRate !== targetRate) {
+                    musicBuffer = await resampleBuffer(musicBuffer, targetRate);
+                }
             } else {
                 throw new Error("No music source selected");
             }
 
-            // 3. Mix with Ducking
-            const mixedBuffer = mixAudioWithDucking(voiceBuffer, musicBuffer, audioContext, {
+            // 4. Mix with Ducking
+            // Ensure we mix using a context that matches our target rate
+            // But mixAudioWithDucking uses the provided context to create new buffers.
+            // We'll create a dummy offline context just for the math/buffer creation with correct params
+            const mixContext = new OfflineAudioContext(2, 1, targetRate); // Dummy context for factory methods
+
+            const mixedBuffer = mixAudioWithDucking(voiceBuffer, musicBuffer, mixContext as unknown as AudioContext, {
                 duckingThreshold: 0.02, // Sensitivity
                 duckingRatio: duckingRatio,
                 attackTime: 0.2, // 200ms fade down
@@ -203,8 +223,8 @@ const MusicStudio: React.FC = () => {
                     onClick={processMix}
                     disabled={isProcessing || !voiceFile || (!musicFile && !generatedMood)}
                     className={`w-full py-4 rounded-xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-lg ${isProcessing || !voiceFile || (!musicFile && !generatedMood)
-                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                            : 'bg-gradient-to-r from-pink-500 to-indigo-600 text-white hover:scale-[1.01] hover:shadow-xl'
+                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-pink-500 to-indigo-600 text-white hover:scale-[1.01] hover:shadow-xl'
                         }`}
                 >
                     {isProcessing ? (
