@@ -81,7 +81,17 @@ const VideoStudio: React.FC = () => {
 
         // Setup MediaRecorder
         const stream = canvas.captureStream(30); // 30 FPS
-        const audioStream = (audioRef.current as any).captureStream ? (audioRef.current as any).captureStream() : null;
+
+        let audioStream: MediaStream | null = null;
+        try {
+            if ((audioRef.current as any).captureStream) {
+                audioStream = (audioRef.current as any).captureStream();
+            } else if ((audioRef.current as any).mozCaptureStream) {
+                audioStream = (audioRef.current as any).mozCaptureStream();
+            }
+        } catch (e) {
+            console.warn("Audio capture not supported, recording video only", e);
+        }
 
         // Merge Audio + Canvas streams
         const combinedStream = new MediaStream([
@@ -89,9 +99,17 @@ const VideoStudio: React.FC = () => {
             ...(audioStream ? audioStream.getAudioTracks() : [])
         ]);
 
-        const recorder = new MediaRecorder(combinedStream, {
-            mimeType: 'video/webm;codecs=vp9'
-        });
+        let recorder: MediaRecorder;
+        try {
+            recorder = new MediaRecorder(combinedStream, {
+                mimeType: 'video/webm'
+            });
+        } catch (e) {
+            console.warn("VP9 not supported, trying default webm");
+            recorder = new MediaRecorder(combinedStream, {
+                mimeType: 'video/webm'
+            });
+        }
 
         recorder.ondataavailable = (e) => {
             if (e.data.size > 0) chunksRef.current.push(e.data);
@@ -106,6 +124,11 @@ const VideoStudio: React.FC = () => {
             a.click();
             setIsRecording(false);
             chunksRef.current = [];
+
+            // Unmute audio if it was captured (Chrome mutes captured audio elements)
+            if (audioRef.current) {
+                audioRef.current.muted = false;
+            }
         };
 
         mediaRecorderRef.current = recorder;
@@ -120,9 +143,28 @@ const VideoStudio: React.FC = () => {
         };
 
         // Start Playback & Recording
-        recorder.start();
-        audioRef.current.play();
-        setIsRecording(true);
+        const startProcess = async () => {
+            try {
+                // Ensure audio is ready
+                if (audioRef.current!.readyState < 2) {
+                    await new Promise(resolve => {
+                        if (audioRef.current) audioRef.current.oncanplay = resolve;
+                        else resolve(true);
+                    });
+                }
+
+                await audioRef.current!.play();
+                recorder.start();
+                setIsRecording(true);
+                drawFrame();
+            } catch (err: any) {
+                console.error("Error starting recording:", err);
+                alert("No se pudo iniciar la grabación: " + err.message + ". Intenta darle play al audio manualmente antes.");
+                setIsRecording(false);
+            }
+        };
+
+        startProcess();
 
         // Animation Loop
         const duration = audioRef.current.duration;
@@ -181,6 +223,7 @@ const VideoStudio: React.FC = () => {
 
             requestAnimationFrame(drawFrame);
         };
+
 
         drawFrame();
     };
