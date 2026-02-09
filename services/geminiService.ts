@@ -287,7 +287,7 @@ ${chunk}`;
     3. NO incluyas texto extra, solo el JSON.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-1.5-flash", // 1.5 Flash is reliable for Multimodal Audio
       contents: [
         {
           role: "user",
