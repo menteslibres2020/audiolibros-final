@@ -3,9 +3,11 @@ import { GoogleGenAI, Modality } from "@google/genai";
 import { decodeBase64, decodeAudioData, audioBufferToWavBlob, mergeAudioBuffers } from "../utils/audioUtils.ts";
 
 export class GeminiTTSService {
-  // Reducimos drásticamente el tamaño del chunk para evitar degradación/susurros en textos largos.
-  // 600 caracteres es un buen balance (aprox 40-60 segs) para mantener la inferencia fresca y potente.
-  private MAX_CHARS_PER_CHUNK = 600;
+  // Ajustamos a 1500: Un balance ideal.
+  // 600 consumía demasiada cuota (muchos requests).
+  // 2500 arriesgaba calidad (voz "borracha" al final).
+  // 1500 permite textos de ~2 min con buena estabilidad y ahorra la mitad de requests.
+  private MAX_CHARS_PER_CHUNK = 1500;
 
   private getAIInstance() {
     return new GoogleGenAI({ apiKey: process.env.API_KEY });
