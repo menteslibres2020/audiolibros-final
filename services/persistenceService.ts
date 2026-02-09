@@ -10,7 +10,7 @@ export interface AppState {
   projectTitle: string;
   voiceId: string;
   emotion: string;
-  mode: 'text' | 'epub' | 'merger';
+  mode: 'text' | 'epub' | 'merger' | 'music';
   bookTitle: string;
   bookAuthor: string;
   chapters: EpubChapter[];
@@ -97,7 +97,7 @@ class PersistenceService {
           let val = request.result;
           if (key === 'chapters' && val) val = await this.deserializeChapters(val);
           if (key === 'history' && val) val = await this.deserializeHistory(val);
-          state[key as keyof AppState] = val;
+          (state as any)[key] = val;
           completed++;
           if (completed === keys.length) resolve(state);
         };

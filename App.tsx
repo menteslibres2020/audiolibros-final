@@ -7,6 +7,7 @@ import { persistenceService } from './services/persistenceService.ts';
 import VoiceSelector from './components/VoiceSelector.tsx';
 import HistoryItem from './components/HistoryItem.tsx';
 import AudioMerger from './components/AudioMerger.tsx';
+import MusicStudio from './components/MusicStudio.tsx';
 import { VOICES, EMOTIONS } from './constants.ts';
 import { NarrationResult } from './types.ts';
 import JSZip from 'jszip';
@@ -36,7 +37,7 @@ const App: React.FC = () => {
   const [projectCharCount, setProjectCharCount] = useState(0);
   const [error, setError] = useState<{ message: string, isQuota?: boolean } | null>(null);
 
-  const [mode, setMode] = useState<'text' | 'epub' | 'merger'>('text');
+  const [mode, setMode] = useState<'text' | 'epub' | 'merger' | 'music'>('text');
   const [bookTitle, setBookTitle] = useState('');
   const [bookAuthor, setBookAuthor] = useState('');
   const [chapters, setChapters] = useState<EpubChapter[]>([]);
@@ -459,7 +460,14 @@ const App: React.FC = () => {
                 className={`px-3 md:px-4 py-2 rounded-lg text-[11px] md:text-xs font-bold transition-all whitespace-nowrap ${mode === 'merger' ? 'bg-purple-50 text-purple-600' : 'text-slate-500 hover:bg-slate-100'}`}
               >
                 <i className="fa-solid fa-layer-group sm:hidden"></i>
-                <span className="hidden sm:inline">Fusión Audio</span>
+                <span className="hidden sm:inline">Fusión</span>
+              </button>
+              <button
+                onClick={() => setMode('music')}
+                className={`px-3 md:px-4 py-2 rounded-lg text-[11px] md:text-xs font-bold transition-all whitespace-nowrap ${mode === 'music' ? 'bg-pink-50 text-pink-600' : 'text-slate-500 hover:bg-slate-100'}`}
+              >
+                <i className="fa-solid fa-wand-magic-sparkles sm:hidden"></i>
+                <span className="hidden sm:inline">Musicalización IA</span>
               </button>
               <div className="w-px h-6 bg-slate-200 mx-1 md:mx-2 shrink-0"></div>
 
@@ -517,7 +525,9 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {mode === 'merger' ? (
+            {mode === 'music' ? (
+              <MusicStudio />
+            ) : mode === 'merger' ? (
               <AudioMerger />
             ) : mode === 'text' ? (
               <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm space-y-4">
