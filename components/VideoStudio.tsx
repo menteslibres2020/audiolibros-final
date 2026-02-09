@@ -111,6 +111,14 @@ const VideoStudio: React.FC = () => {
         mediaRecorderRef.current = recorder;
         chunksRef.current = []; // Clear chunks
 
+        // Event Listener for robust ending (works even in background tabs)
+        audioRef.current.onended = () => {
+            if (recorder.state === "recording") {
+                recorder.stop();
+            }
+            setIsRecording(false);
+        };
+
         // Start Playback & Recording
         recorder.start();
         audioRef.current.play();
@@ -122,10 +130,14 @@ const VideoStudio: React.FC = () => {
         const startTime = Date.now();
 
         const drawFrame = () => {
-            if (!isRecording && recorder.state === "inactive") return;
-            if (audioRef.current?.ended) {
-                recorder.stop();
-                return;
+            // Check if recording stopped or component unmounted
+            if (!isRecording && (!mediaRecorderRef.current || mediaRecorderRef.current.state === "inactive")) return;
+
+            // Calculate progress for UI
+            if (audioRef.current) {
+                const current = audioRef.current.currentTime;
+                const total = audioRef.current.duration;
+                if (total > 0) setProgress((current / total) * 100);
             }
 
             const currentTime = (Date.now() - startTime) / 1000;
@@ -133,6 +145,12 @@ const VideoStudio: React.FC = () => {
                 Math.floor(currentTime / imgDuration),
                 images.length - 1
             );
+
+            // Safety check for images
+            if (!images[imgIndex]) {
+                requestAnimationFrame(drawFrame);
+                return;
+            }
 
             const img = new Image();
             img.src = images[imgIndex];
@@ -165,6 +183,17 @@ const VideoStudio: React.FC = () => {
         };
 
         drawFrame();
+    };
+
+    const stopRecordingManual = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+            mediaRecorderRef.current.stop();
+        }
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+        }
+        setIsRecording(false);
     };
 
     const currentConfig = ASPECT_RATIOS[format];
@@ -266,8 +295,9 @@ const VideoStudio: React.FC = () => {
                 {/* Preview & Export */}
                 <div className="bg-slate-900 rounded-3xl p-6 flex flex-col items-center justify-center min-h-[400px] border border-slate-800 relative overflow-hidden">
                     {/* Canvas for Video */}
-                    <div className={`relative bg-black shadow-2xl rounded-lg border border-slate-700 overflow-hidden transition-all duration-500 flex items-center justify-center ${currentConfig.aspectClass}`} style={{ maxHeight: '500px', maxWidth: '100%' }}>
+                    <div className={`relative bg-black shadow-2xl rounded-lg border border-slate-700 overflow-hidden transition-all duration-500 flex items-center justify-center ${currentConfig.aspectClass}`} style={{ maxHeight: '500px', maxWidth: '100%', aspectRatio: format === 'landscape' ? '16/9' : format === 'reel' ? '9/16' : '1' }}>
                         <canvas
+                            key={format}
                             ref={canvasRef}
                             width={currentConfig.width}
                             height={currentConfig.height}
@@ -290,9 +320,24 @@ const VideoStudio: React.FC = () => {
                     )}
 
                     {isRecording && (
-                        <div className="absolute top-4 right-4 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse flex items-center gap-2">
-                            <div className="w-2 h-2 bg-white rounded-full"></div>
-                            GRABANDO...
+                        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
+                            <div className="bg-slate-900 p-6 rounded-3xl border border-slate-700 shadow-2xl text-center space-y-4">
+                                <div className="text-red-500 text-6xl animate-pulse">
+                                    <i className="fa-regular fa-circle-dot"></i>
+                                </div>
+                                <div>
+                                    <h3 className="text-white font-black text-xl">GRABANDO VIDEO...</h3>
+                                    <p className="text-slate-400 text-xs mt-1">Espera a que termine el audio.</p>
+                                </div>
+                                <div className="w-64 bg-slate-800 h-2 rounded-full overflow-hidden">
+                                    <div className="h-full bg-red-600 transition-all duration-200" style={{ width: `${progress}%` }}></div>
+                                </div>
+                                <p className="text-white font-bold font-mono">{Math.round(progress)}%</p>
+
+                                <button onClick={stopRecordingManual} className="text-xs text-slate-500 hover:text-white underline mt-4">
+                                    Dejar de grabar y guardar ahora
+                                </button>
+                            </div>
                         </div>
                     )}
 
