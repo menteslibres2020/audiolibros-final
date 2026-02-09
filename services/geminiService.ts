@@ -304,32 +304,53 @@ ${chunk}`;
     2. Los prompts deben ser visualmente ricos, detallados y artísticos.
     3. NO incluyas texto extra, solo el JSON.`;
 
-    try {
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { text: prompt },
-              { inlineData: { data: base64Audio, mimeType } }
-            ]
-          }
-        ]
-      });
+    // Lista de modelos a probar en orden de preferencia
+    const modelsToTry = [
+      "gemini-2.0-flash", // Official 2.0
+      "gemini-2.0-flash-exp", // Experimental 2.0
+      "gemini-1.5-flash", // Stable 1.5 Flash
+      "gemini-1.5-flash-002", // Specific version
+      "gemini-1.5-pro" // Heavy fallback
+    ];
 
-      const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-      return JSON.parse(cleanJson);
+    let lastError: any = null;
 
-    } catch (e: any) {
-      console.error("Error detallado en Gemini Audio Analysis:", e);
+    for (const modelName of modelsToTry) {
+      try {
+        console.log(`Intentando analizar audio con modelo: ${modelName} (${mimeType})`);
 
-      // Fallback local si falla la API (para no bloquear al usuario y mostrar que la UI funciona)
-      // Opcional: throw e; si queremos que falle duro.
-      // Pero mejor lanzar error con detalle.
-      throw new Error(`Fallo en IA (${mimeType}): ${e.message || e}`);
+        const response = await ai.models.generateContent({
+          model: modelName,
+          contents: [
+            {
+              role: "user",
+              parts: [
+                { text: prompt },
+                { inlineData: { data: base64Audio, mimeType } }
+              ]
+            }
+          ]
+        });
+
+        const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanJson);
+
+      } catch (e: any) {
+        console.warn(`Fallo con modelo ${modelName}:`, e.message);
+        lastError = e;
+        // Si es un error de parseo JSON, probablemente el modelo contestó pero mal, así que no seguimos probando modelos
+        if (e instanceof SyntaxError) {
+          throw new Error("La IA respondió pero no generó un JSON válido.");
+        }
+        // Si es 404 o 400 (Not found / Bad Request), seguimos al siguiente modelo
+        continue;
+      }
     }
+
+    // Si llegamos aquí, fallaron todos
+    console.error("Todos los modelos fallaron en Audio Analysis:", lastError);
+    throw new Error(`Fallo en IA (Todos los intentos): ${lastError?.message || 'Error desconocido'}`);
   }
 
   private blobToBase64(blob: Blob): Promise<string> {

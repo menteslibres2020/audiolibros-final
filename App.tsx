@@ -7,7 +7,6 @@ import { persistenceService } from './services/persistenceService.ts';
 import VoiceSelector from './components/VoiceSelector.tsx';
 import HistoryItem from './components/HistoryItem.tsx';
 import AudioMerger from './components/AudioMerger.tsx';
-import MusicStudio from './components/MusicStudio.tsx';
 import VideoStudio from './components/VideoStudio.tsx';
 import { VOICES, EMOTIONS } from './constants.ts';
 import { NarrationResult } from './types.ts';
@@ -464,13 +463,6 @@ const App: React.FC = () => {
                 <span className="hidden sm:inline">Fusión</span>
               </button>
               <button
-                onClick={() => setMode('music')}
-                className={`px-3 md:px-4 py-2 rounded-lg text-[11px] md:text-xs font-bold transition-all whitespace-nowrap ${mode === 'music' ? 'bg-orange-50 text-orange-600' : 'text-slate-500 hover:bg-slate-100'}`}
-              >
-                <i className="fa-solid fa-music sm:hidden"></i>
-                <span className="hidden sm:inline">Música</span>
-              </button>
-              <button
                 onClick={() => setMode('video')}
                 className={`px-3 md:px-4 py-2 rounded-lg text-[11px] md:text-xs font-bold transition-all whitespace-nowrap ${mode === 'video' ? 'bg-rose-50 text-rose-600' : 'text-slate-500 hover:bg-slate-100'}`}
               >
@@ -535,8 +527,6 @@ const App: React.FC = () => {
 
             {mode === 'merger' ? (
               <AudioMerger />
-            ) : mode === 'music' ? (
-              <MusicStudio />
             ) : mode === 'video' ? (
               <VideoStudio />
             ) : mode === 'text' ? (
