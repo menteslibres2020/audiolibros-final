@@ -37,45 +37,35 @@ const MusicStudio: React.FC = () => {
         setIsProcessing(true);
 
         try {
-            // 1. Create a temporary context to extract data
+            // 1. Create a standard context for decoding (browser usually picks 44100 or 48000)
             const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const MASTER_SAMPLE_RATE = 44100; // Force standard CD quality to avoid playback speed issues
 
-            // 2. Decode Voice
+            // 2. Decode Voice & Resample to Master Rate
             const voiceArrayBuffer = await voiceFile.arrayBuffer();
             const rawVoiceBuffer = await audioContext.decodeAudioData(voiceArrayBuffer);
+            const voiceBuffer = await resampleBuffer(rawVoiceBuffer, MASTER_SAMPLE_RATE);
 
-            // Use Voice Sample Rate as the master rate (safe default: 24000 or 44100)
-            const targetRate = rawVoiceBuffer.sampleRate; // Respect original voice rate
-            const voiceBuffer = rawVoiceBuffer; // Already at target rate
-
-            // 3. Prepare Music Buffer
+            // 3. Prepare Music Buffer & Resample to Master Rate
             let musicBuffer: AudioBuffer;
 
             if (musicFile) {
                 const musicArrayBuffer = await musicFile.arrayBuffer();
                 const rawMusicBuffer = await audioContext.decodeAudioData(musicArrayBuffer);
-                // Resample music to match voice rate
-                musicBuffer = await resampleBuffer(rawMusicBuffer, targetRate);
+                musicBuffer = await resampleBuffer(rawMusicBuffer, MASTER_SAMPLE_RATE);
             } else if (generatedMood) {
-                // Generate Ambient Pad at voice sample rate
-                // We need to create a context at target rate for generation or use current and resample.
-                // generateAmbientPad uses provided context's sample rate.
-                // Let's ensure consistency.
-                const genContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: targetRate });
-                musicBuffer = generateAmbientPad(genContext, voiceBuffer.duration + 5, generatedMood);
-                // If genContext didn't respect targetRate (browser lock), resample as safety
-                if (musicBuffer.sampleRate !== targetRate) {
-                    musicBuffer = await resampleBuffer(musicBuffer, targetRate);
-                }
+                // Generate Ambient Pad at correct rate
+                // Pass a dummy context with correct rate or use OfflineAudioContext
+                const genContext = new OfflineAudioContext(2, 1, MASTER_SAMPLE_RATE);
+                const rawGenBuffer = generateAmbientPad(genContext as unknown as AudioContext, voiceBuffer.duration + 5, generatedMood);
+                musicBuffer = rawGenBuffer;
             } else {
                 throw new Error("No music source selected");
             }
 
             // 4. Mix with Ducking
-            // Ensure we mix using a context that matches our target rate
-            // But mixAudioWithDucking uses the provided context to create new buffers.
-            // We'll create a dummy offline context just for the math/buffer creation with correct params
-            const mixContext = new OfflineAudioContext(2, 1, targetRate); // Dummy context for factory methods
+            // Create context at master rate for mixing params
+            const mixContext = new OfflineAudioContext(2, 1, MASTER_SAMPLE_RATE);
 
             const mixedBuffer = mixAudioWithDucking(voiceBuffer, musicBuffer, mixContext as unknown as AudioContext, {
                 duckingThreshold: 0.02, // Sensitivity

@@ -101,7 +101,7 @@ export async function resampleBuffer(buffer: AudioBuffer, targetRate: number): P
 
   const offlineCtx = new OfflineAudioContext(
     buffer.numberOfChannels,
-    buffer.duration * targetRate,
+    Math.ceil(buffer.duration * targetRate),
     targetRate
   );
 
