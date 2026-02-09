@@ -10,7 +10,7 @@ export interface AppState {
   projectTitle: string;
   voiceId: string;
   emotion: string;
-  mode: 'text' | 'epub' | 'merger';
+  mode: 'text' | 'epub' | 'merger' | 'music' | 'video';
   bookTitle: string;
   bookAuthor: string;
   chapters: EpubChapter[];

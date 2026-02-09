@@ -271,6 +271,60 @@ ${chunk}`;
 
     throw lastError || new Error("No se pudo generar imagen con ninguno de los modelos disponibles.");
   }
+  async analyzeAudioForVideo(audioBlob: Blob): Promise<string[]> {
+    const ai = this.getAIInstance();
+
+    // Convert Blob to Base64
+    const base64Audio = await this.blobToBase64(audioBlob);
+
+    const prompt = `Analiza este audio detalladamente.
+    Tu tarea es generar 3 PROMPTS DE IMAGEN (en inglés) que representen visualmente la narrativa o el ambiente de este audio.
+    Estas imágenes se usarán para crear un video para redes sociales.
+    
+    Reglas:
+    1. Devuelve SOLO un array JSON de strings. Ejemplo: ["A dark forest with fog", "A knight standing in the rain", "A castle in the distance"]
+    2. Los prompts deben ser visualmente ricos, detallados y artísticos.
+    3. NO incluyas texto extra, solo el JSON.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            { inlineData: { data: base64Audio, mimeType: audioBlob.type || 'audio/mp3' } }
+          ]
+        }
+      ]
+    });
+
+    const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    try {
+      // Clean markdown code blocks if present
+      const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(cleanJson);
+    } catch (e) {
+      console.error("Error parsing AI response", e);
+      return [
+        "A cinematic shot of a audiobook storytelling session, dramatic lighting, 8k",
+        "Abstract visualization of sound waves and magic, digital art",
+        "A cozy reading nook with books and headphones, warm lighting"
+      ];
+    }
+  }
+
+  private blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = (reader.result as string).split(',')[1];
+        resolve(base64String);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
 }
 
 export const ttsService = new GeminiTTSService();
