@@ -81,43 +81,58 @@ const VideoStudio: React.FC = () => {
     const startRecording = async () => {
         if (!canvasRef.current || !audioRef.current || images.length === 0) return;
 
-        try {
-            const canvas = canvasRef.current;
-            const audio = audioRef.current;
-            audio.crossOrigin = "anonymous"; // Robustness check
+        const canvas = canvasRef.current;
+        const audio = audioRef.current;
+        const ctx = canvas.getContext("2d");
 
-            // 1. Setup AudioContext for robust mixing (Fixes captureStream bugs)
-            if (!audioContextRef.current) {
+        // NOTE: We REMOVED audio.crossOrigin = "anonymous" because it breaks local Blob URL playback in Chrome.
+
+        try {
+            // 1. Setup AudioContext (Only if needed and strictly once)
+            if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
                 audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
             }
-            const ctx = audioContextRef.current;
+            const audioCtx = audioContextRef.current;
 
-            // Resume context if suspended (common browser policy)
-            if (ctx.state === 'suspended') {
-                await ctx.resume();
+            // Resume context if suspended (browser autoplay policy)
+            if (audioCtx.state === 'suspended') {
+                await audioCtx.resume().catch(e => console.warn("Context resume warning:", e));
             }
 
-            // Create nodes only once
+            // Create nodes only once per audio element reference
             if (!sourceNodeRef.current) {
-                sourceNodeRef.current = ctx.createMediaElementSource(audio);
-                destNodeRef.current = ctx.createMediaStreamDestination();
+                try {
+                    sourceNodeRef.current = audioCtx.createMediaElementSource(audio);
+                    destNodeRef.current = audioCtx.createMediaStreamDestination();
 
-                // Connect: Source -> Dest (Recorder)
-                sourceNodeRef.current.connect(destNodeRef.current);
-                // Connect: Source -> Speakers (User hears it)
-                sourceNodeRef.current.connect(ctx.destination);
+                    // Connect: Source -> Dest (Recorder)
+                    sourceNodeRef.current.connect(destNodeRef.current);
+                    // Connect: Source -> Speakers (User hears it)
+                    sourceNodeRef.current.connect(audioCtx.destination);
+                } catch (e) {
+                    console.warn("Audio node creation warning (using existing?):", e);
+                }
             }
 
-            // 2. Prepare Streams
+            // 2. Prepare Video Stream
             const canvasStream = canvas.captureStream(30); // 30 FPS
-            const audioStream = destNodeRef.current!.stream;
+
+            // 3. Prepare Audio Stream
+            let audioStream = destNodeRef.current?.stream;
+
+            // Critical Fallback: If WebAudio API failed, try standard capture
+            if (!audioStream) {
+                try {
+                    audioStream = (audio as any).captureStream ? (audio as any).captureStream() : null;
+                } catch (e) { console.warn("Fallback capture failed", e); }
+            }
 
             const combinedStream = new MediaStream([
                 ...canvasStream.getVideoTracks(),
-                ...audioStream.getAudioTracks()
+                ...(audioStream ? audioStream.getAudioTracks() : [])
             ]);
 
-            // 3. Setup Recorder
+            // 4. Setup Recorder
             let recorder: MediaRecorder;
             try {
                 recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9' });
@@ -143,74 +158,80 @@ const VideoStudio: React.FC = () => {
             mediaRecorderRef.current = recorder;
             chunksRef.current = [];
 
-            // 4. Start Everything
+            // 5. Start Everything (Non-blocking pattern)
             recorder.start();
-            await audio.play(); // Wait for playback to actually start
-            setIsRecording(true);
+            setIsRecording(true); // START UI IMMEDIATELY
 
-            // 5. Animation Loop
-            const duration = audio.duration || 1; // Prevent div by zero
-            const imgDuration = duration / images.length;
-            const startTime = Date.now();
-            const canvasCtx = canvas.getContext("2d");
+            const startAnimationLoop = () => {
+                // Animation Loop
+                const duration = audio.duration || 1;
+                const imgDuration = duration / images.length;
+                const startTime = Date.now();
 
-            const drawFrame = () => {
-                if (!isRecording && (!mediaRecorderRef.current || mediaRecorderRef.current.state === "inactive")) return;
+                const drawFrame = () => {
+                    // Stop conditions
+                    if (!mediaRecorderRef.current || mediaRecorderRef.current.state === "inactive") return;
 
-                // Keep progress updated
-                if (audio) {
-                    const pct = (audio.currentTime / audio.duration) * 100;
-                    setProgress(isNaN(pct) ? 0 : pct);
-                }
-
-                // Video Logic
-                const currentTime = (Date.now() - startTime) / 1000;
-
-                // Stop if finished
-                if (currentTime >= duration || audio.ended) {
-                    if (mediaRecorderRef.current?.state === "recording") {
-                        mediaRecorderRef.current.stop();
+                    // Keep progress updated
+                    if (audio) {
+                        const pct = (audio.currentTime / audio.duration) * 100;
+                        setProgress(isNaN(pct) ? 0 : pct);
                     }
-                    return;
-                }
 
-                const imgIndex = Math.min(
-                    Math.floor(currentTime / imgDuration),
-                    images.length - 1
-                );
+                    // Video Logic
+                    const currentTime = (Date.now() - startTime) / 1000;
 
-                if (images[imgIndex] && canvasCtx) {
-                    const img = new Image();
-                    img.src = images[imgIndex];
-                    // Only draw if loaded (using cache effectively)
-                    if (img.complete) {
-                        // Background blur
-                        canvasCtx.filter = "blur(20px) brightness(0.6)";
-                        canvasCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        canvasCtx.filter = "none";
-
-                        // Center contain
-                        const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
-                        const w = img.width * scale;
-                        const h = img.height * scale;
-                        const x = (canvas.width - w) / 2;
-                        const y = (canvas.height - h) / 2;
-
-                        canvasCtx.shadowColor = "rgba(0,0,0,0.5)";
-                        canvasCtx.shadowBlur = 20;
-                        canvasCtx.drawImage(img, x, y, w, h);
-                        canvasCtx.shadowBlur = 0;
+                    if (currentTime >= duration || audio.ended) {
+                        if (mediaRecorderRef.current?.state === "recording") {
+                            mediaRecorderRef.current.stop();
+                        }
+                        return;
                     }
-                }
 
-                requestAnimationFrame(drawFrame);
+                    const imgIndex = Math.min(
+                        Math.floor(currentTime / imgDuration),
+                        images.length - 1
+                    );
+
+                    if (images[imgIndex] && ctx) {
+                        const img = new Image();
+                        img.src = images[imgIndex];
+                        if (img.complete) {
+                            // Background blur
+                            ctx.filter = "blur(20px) brightness(0.6)";
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            ctx.filter = "none";
+                            // Center contain
+                            const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+                            const w = img.width * scale;
+                            const h = img.height * scale;
+                            const x = (canvas.width - w) / 2;
+                            const y = (canvas.height - h) / 2;
+                            ctx.shadowColor = "rgba(0,0,0,0.5)";
+                            ctx.shadowBlur = 20;
+                            ctx.drawImage(img, x, y, w, h);
+                            ctx.shadowBlur = 0;
+                        }
+                    }
+                    requestAnimationFrame(drawFrame);
+                };
+                drawFrame();
             };
 
-            drawFrame();
+            // Play audio and start loop
+            // We use .then() instead of await to ensure UI doesn't freeze if audio takes time
+            audio.play().then(() => {
+                startAnimationLoop();
+            }).catch(e => {
+                console.error("Audio play auto-start failed", e);
+                // We still start the animation loop so we don't get stuck in 0%
+                startAnimationLoop();
+                alert("El audio no arrancó automáticamente. Por favor dale PLAY manual al audio.");
+            });
 
         } catch (err: any) {
-            console.error("Recording error:", err);
-            alert("Error al iniciar grabación: " + err.message);
+            console.error("Recording setup error:", err);
+            alert("Error crítico al preparar grabación: " + err.message);
             setIsRecording(false);
             if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
         }
