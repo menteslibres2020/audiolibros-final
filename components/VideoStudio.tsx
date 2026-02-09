@@ -2,6 +2,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ttsService } from "../services/geminiService";
 
+type VideoFormat = 'reel' | 'square' | 'landscape';
+
+const ASPECT_RATIOS = {
+    reel: { width: 1080, height: 1920, label: "Story / TikTok / Reel (9:16)", aspectClass: "aspect-[9/16]" },
+    square: { width: 1080, height: 1080, label: "Post / Instagram (1:1)", aspectClass: "aspect-square" },
+    landscape: { width: 1920, height: 1080, label: "YouTube / Landscape (16:9)", aspectClass: "aspect-video" }
+};
+
 const VideoStudio: React.FC = () => {
     const [audioFile, setAudioFile] = useState<File | null>(null);
     const [prompts, setPrompts] = useState<string[]>([]);
@@ -10,6 +18,7 @@ const VideoStudio: React.FC = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [format, setFormat] = useState<VideoFormat>('reel');
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -31,9 +40,9 @@ const VideoStudio: React.FC = () => {
         try {
             const result = await ttsService.analyzeAudioForVideo(audioFile);
             setPrompts(result);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error analyzing audio:", error);
-            alert("Error al analizar el audio para generar prompts.");
+            alert("Error al analizar el audio: " + (error.message || "Error desconocido"));
         } finally {
             setIsAnalyzing(false);
         }
@@ -93,7 +102,7 @@ const VideoStudio: React.FC = () => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `video_social_${Date.now()}.webm`;
+            a.download = `video_social_${format}_${Date.now()}.webm`;
             a.click();
             setIsRecording(false);
             chunksRef.current = [];
@@ -127,26 +136,38 @@ const VideoStudio: React.FC = () => {
 
             const img = new Image();
             img.src = images[imgIndex];
-            // Just draw assuming loaded (images are base64, usually instant)
-            // Ideally we pre-load, but this is a simple implementation
+
             if (img.complete) {
-                // Object Fit: Cover
-                const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
-                const x = (canvas.width / 2) - (img.width / 2) * scale;
-                const y = (canvas.height / 2) - (img.height / 2) * scale;
-                ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                // Background blur fill
+                ctx.filter = "blur(20px) brightness(0.6)";
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height); // Stretch blur
+                ctx.filter = "none";
+
+                // Object Fit: Content Contain (Center)
+                const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+                const w = img.width * scale;
+                const h = img.height * scale;
+                const x = (canvas.width - w) / 2;
+                const y = (canvas.height - h) / 2;
+
+                ctx.shadowColor = "rgba(0,0,0,0.5)";
+                ctx.shadowBlur = 20;
+                ctx.drawImage(img, x, y, w, h);
+                ctx.shadowBlur = 0;
+
             } else {
                 img.onload = () => {
                     // Late draw
                 }
             }
 
-            // Overlay text?
             requestAnimationFrame(drawFrame);
         };
 
         drawFrame();
     };
+
+    const currentConfig = ASPECT_RATIOS[format];
 
     return (
         <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -161,8 +182,35 @@ const VideoStudio: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Paso 1: Audio */}
+                {/* Paso 1: Config & Audio */}
                 <div className="space-y-6">
+                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">0. FORMATO DE VIDEO</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            <button
+                                onClick={() => setFormat('square')}
+                                className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${format === 'square' ? 'bg-orange-100 border-orange-500 text-orange-700' : 'bg-white border-slate-200 text-slate-400 hover:border-orange-300'}`}
+                            >
+                                <i className="fa-regular fa-square text-lg"></i>
+                                <span className="text-[10px] font-bold">1:1 (Post)</span>
+                            </button>
+                            <button
+                                onClick={() => setFormat('reel')}
+                                className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${format === 'reel' ? 'bg-orange-100 border-orange-500 text-orange-700' : 'bg-white border-slate-200 text-slate-400 hover:border-orange-300'}`}
+                            >
+                                <i className="fa-solid fa-mobile-screen text-lg"></i>
+                                <span className="text-[10px] font-bold">9:16 (Reel)</span>
+                            </button>
+                            <button
+                                onClick={() => setFormat('landscape')}
+                                className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${format === 'landscape' ? 'bg-orange-100 border-orange-500 text-orange-700' : 'bg-white border-slate-200 text-slate-400 hover:border-orange-300'}`}
+                            >
+                                <i className="fa-brands fa-youtube text-lg"></i>
+                                <span className="text-[10px] font-bold">16:9 (YT)</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
                         <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">1. Sube tu Audio Narrado</label>
                         <input
@@ -218,12 +266,15 @@ const VideoStudio: React.FC = () => {
                 {/* Preview & Export */}
                 <div className="bg-slate-900 rounded-3xl p-6 flex flex-col items-center justify-center min-h-[400px] border border-slate-800 relative overflow-hidden">
                     {/* Canvas for Video */}
-                    <canvas
-                        ref={canvasRef}
-                        width={1080}
-                        height={1920} // 9:16 aspect ratio default
-                        className="w-auto h-full max-h-[500px] bg-black shadow-2xl rounded-lg border border-slate-700 aspect-[9/16]"
-                    />
+                    <div className={`relative bg-black shadow-2xl rounded-lg border border-slate-700 overflow-hidden transition-all duration-500 flex items-center justify-center ${currentConfig.aspectClass}`} style={{ maxHeight: '500px', maxWidth: '100%' }}>
+                        <canvas
+                            ref={canvasRef}
+                            width={currentConfig.width}
+                            height={currentConfig.height}
+                            className="w-full h-full object-contain"
+                        />
+                    </div>
+
 
                     {/* Overlay Controls */}
                     {images.length > 0 && !isRecording && (
@@ -249,7 +300,7 @@ const VideoStudio: React.FC = () => {
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <p className="text-slate-600 font-bold text-center px-6">
                                 Las imágenes generadas aparecerán aquí.<br />
-                                Formato Vertical (Story/TikTok)
+                                {currentConfig.label}
                             </p>
                         </div>
                     )}

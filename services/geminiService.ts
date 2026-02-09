@@ -271,11 +271,29 @@ ${chunk}`;
 
     throw lastError || new Error("No se pudo generar imagen con ninguno de los modelos disponibles.");
   }
-  async analyzeAudioForVideo(audioBlob: Blob): Promise<string[]> {
+  async analyzeAudioForVideo(audioBlob: Blob | File): Promise<string[]> {
     const ai = this.getAIInstance();
 
     // Convert Blob to Base64
     const base64Audio = await this.blobToBase64(audioBlob);
+
+    // Determine MIME type strictly
+    let mimeType = audioBlob.type;
+    if (!mimeType || mimeType === '') {
+      // Try to guess from name if it's a File
+      if ('name' in audioBlob && typeof (audioBlob as File).name === 'string') {
+        const name = (audioBlob as File).name.toLowerCase();
+        if (name.endsWith('.wav')) mimeType = 'audio/wav';
+        else if (name.endsWith('.mp3')) mimeType = 'audio/mp3';
+        else if (name.endsWith('.ogg')) mimeType = 'audio/ogg';
+        else if (name.endsWith('.acc')) mimeType = 'audio/aac';
+        else if (name.endsWith('.flac')) mimeType = 'audio/flac';
+      }
+    }
+    // Fallback default
+    if (!mimeType) mimeType = 'audio/mp3';
+
+    console.log(`Analizando audio con modelo gemini-1.5-flash. MIME detectado: ${mimeType}`);
 
     const prompt = `Analiza este audio detalladamente.
     Tu tarea es generar 3 PROMPTS DE IMAGEN (en inglés) que representen visualmente la narrativa o el ambiente de este audio.
@@ -286,31 +304,31 @@ ${chunk}`;
     2. Los prompts deben ser visualmente ricos, detallados y artísticos.
     3. NO incluyas texto extra, solo el JSON.`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash", // 1.5 Flash is reliable for Multimodal Audio
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { text: prompt },
-            { inlineData: { data: base64Audio, mimeType: audioBlob.type || 'audio/mp3' } }
-          ]
-        }
-      ]
-    });
-
-    const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text || "";
     try {
-      // Clean markdown code blocks if present
+      const response = await ai.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: prompt },
+              { inlineData: { data: base64Audio, mimeType } }
+            ]
+          }
+        ]
+      });
+
+      const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text || "";
       const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
       return JSON.parse(cleanJson);
-    } catch (e) {
-      console.error("Error parsing AI response", e);
-      return [
-        "A cinematic shot of a audiobook storytelling session, dramatic lighting, 8k",
-        "Abstract visualization of sound waves and magic, digital art",
-        "A cozy reading nook with books and headphones, warm lighting"
-      ];
+
+    } catch (e: any) {
+      console.error("Error detallado en Gemini Audio Analysis:", e);
+
+      // Fallback local si falla la API (para no bloquear al usuario y mostrar que la UI funciona)
+      // Opcional: throw e; si queremos que falle duro.
+      // Pero mejor lanzar error con detalle.
+      throw new Error(`Fallo en IA (${mimeType}): ${e.message || e}`);
     }
   }
 
