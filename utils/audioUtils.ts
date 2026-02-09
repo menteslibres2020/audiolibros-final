@@ -97,3 +97,20 @@ export function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
 }
 
 
+
+export async function resampleBuffer(buffer: AudioBuffer, targetRate: number): Promise<AudioBuffer> {
+  if (buffer.sampleRate === targetRate) return buffer;
+
+  const ctx = new OfflineAudioContext(
+    buffer.numberOfChannels,
+    buffer.duration * targetRate,
+    targetRate
+  );
+
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(ctx.destination);
+  source.start(0);
+
+  return await ctx.startRendering();
+}
