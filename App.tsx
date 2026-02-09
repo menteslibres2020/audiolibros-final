@@ -7,7 +7,7 @@ import { persistenceService } from './services/persistenceService.ts';
 import VoiceSelector from './components/VoiceSelector.tsx';
 import HistoryItem from './components/HistoryItem.tsx';
 import AudioMerger from './components/AudioMerger.tsx';
-import VideoStudio from './components/VideoStudio.tsx';
+
 import { VOICES, EMOTIONS } from './constants.ts';
 import { NarrationResult } from './types.ts';
 import JSZip from 'jszip';
@@ -462,13 +462,6 @@ const App: React.FC = () => {
                 <i className="fa-solid fa-layer-group sm:hidden"></i>
                 <span className="hidden sm:inline">Fusión</span>
               </button>
-              <button
-                onClick={() => setMode('video')}
-                className={`px-3 md:px-4 py-2 rounded-lg text-[11px] md:text-xs font-bold transition-all whitespace-nowrap ${mode === 'video' ? 'bg-rose-50 text-rose-600' : 'text-slate-500 hover:bg-slate-100'}`}
-              >
-                <i className="fa-solid fa-video sm:hidden"></i>
-                <span className="hidden sm:inline">Video Social</span>
-              </button>
 
 
               <button onClick={() => setShowCoverGenerator(true)} className="px-3 md:px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-[11px] md:text-xs font-bold shadow-md hover:shadow-lg transition-all whitespace-nowrap flex items-center gap-2" title="Crear Portada IA">
@@ -527,8 +520,6 @@ const App: React.FC = () => {
 
             {mode === 'merger' ? (
               <AudioMerger />
-            ) : mode === 'video' ? (
-              <VideoStudio />
             ) : mode === 'text' ? (
               <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm space-y-4">
                 <input type="text" value={projectTitle} onChange={(e) => setProjectTitle(e.target.value)} placeholder="Título de la obra o capítulo..." className="w-full px-4 md:px-5 py-3 md:py-4 rounded-xl md:rounded-2xl bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none font-bold text-sm md:text-base" />
