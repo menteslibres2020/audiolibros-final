@@ -172,12 +172,11 @@ ${chunk}`;
 
 
     // Intentar con varios modelos conocidos
-    // SOLICITADO POR USUARIO: TENEMOS PROHIBIDO CAMBIAR ESTE MODELO
+    // SOLICITADO POR USUARIO: USO EXCLUSIVO DE LA GAMA GEMINI FLASH
+    // Eliminamos 'imagen' para evitar errores confusos si los Gemini fallan.
     const models = [
-      'gemini-2.5-flash-image-preview', // PRIORIDAD ABSOLUTA
-      'gemini-2.0-flash',
-      'gemini-2.0-flash-exp',
-      'imagen-3.0-generate-001',
+      'gemini-2.5-flash-image-preview', // PRIORIDAD 1: Solicitado explícitamente
+      'gemini-2.0-flash', // PRIORIDAD 2: Fallback robusto
     ];
 
     let lastError = null;
