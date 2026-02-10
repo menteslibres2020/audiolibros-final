@@ -186,12 +186,15 @@ ${chunk}`;
         let url = '';
         let body = {};
 
-        // Lógica para diferenciar API de Imagen vs Gemini
-        if (model.includes('gemini')) {
-          // API Gemini: generateContent
+        // Lógica de enrutamiento API
+        // Gemini 2.0 Flash y variantes estándar -> generateContent for Image
+        // Gemini 2.5 Flash Image Preview (y Imagen) -> predict (según comportamiento reportado)
+        const useGenerateContent = model.includes('gemini') && !model.includes('flash-image-preview');
+
+        if (useGenerateContent) {
+          // API Gemini Multimodal: generateContent
           url = `/api/gemini/v1beta/models/${model}:generateContent`;
 
-          // Mapear aspect ratio a texto descriptivo - INYECTADO AL INICIO DEL PROMPT
           let arText = "";
           if (aspectRatio === '16:9') arText = "Wide cinematic 16:9 aspect ratio";
           else if (aspectRatio === '9:16') arText = "Vertical mobile 9:16 aspect ratio";
@@ -199,12 +202,11 @@ ${chunk}`;
 
           body = {
             contents: [{ parts: [{ text: `Generate a ${arText} image. ${prompt}` }] }],
-            // generationConfig removido para evitar error 400 "responseModalities not supported"
-            // El modelo gemini-2.5-flash-image-preview debe inferir la tarea por el prompt.
           };
 
         } else {
-          // API Imagen: predict
+          // API Imagen / Vertex-style: predict
+          // Se usa para 'imagen-3.0' y aparentemente para 'gemini-2.5-flash-image-preview'
           url = `/api/gemini/v1beta/models/${model}:predict`;
           body = {
             instances: [
@@ -212,7 +214,7 @@ ${chunk}`;
             ],
             parameters: {
               sampleCount: 1,
-              aspectRatio: aspectRatio, // Soporta "16:9", "1:1", "9:16"
+              aspectRatio: aspectRatio,
               safetySetting: "block_medium_and_above",
               personGeneration: "allow_adult",
             }
