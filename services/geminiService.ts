@@ -192,20 +192,22 @@ ${chunk}`;
           let arText = "";
           let arSuffix = "";
           if (aspectRatio === '16:9') {
-            arText = "Wide cinematic and panoramic (16:9)";
-            arSuffix = " --ar 16:9";
+            arText = "Wide cinematic (16:9)";
+            arSuffix = ", aspect ratio 16:9";
           }
           else if (aspectRatio === '9:16') {
-            arText = "Tall vertical mobile (9:16)";
-            arSuffix = " --ar 9:16";
+            arText = "Tall vertical (9:16)";
+            arSuffix = ", aspect ratio 9:16";
           }
           else {
             arText = "Square (1:1)";
-            arSuffix = " --ar 1:1";
+            arSuffix = ", aspect ratio 1:1";
           }
 
+          const finalPrompt = `Create a ${arText} image. ${prompt}. Ensure the image has an aspect ratio of ${aspectRatio.replace(':', ' to ')}.${arSuffix}`;
+
           body = {
-            contents: [{ parts: [{ text: `Generate a ${arText} image. ${prompt} ${arSuffix}` }] }],
+            contents: [{ parts: [{ text: finalPrompt }] }],
             generationConfig: {
               responseModalities: ["IMAGE"],
               speechConfig: undefined,
