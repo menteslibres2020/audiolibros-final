@@ -68,6 +68,29 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const init = async () => {
+      try {
+        const saved = await persistenceService.loadState();
+        if (saved.text !== undefined) setText(saved.text);
+        if (saved.projectTitle !== undefined) setProjectTitle(saved.projectTitle);
+        if (saved.voiceId !== undefined) setVoiceId(saved.voiceId);
+        if (saved.emotion !== undefined) setEmotion(saved.emotion);
+        if (saved.mode !== undefined) setMode(saved.mode);
+        if (saved.bookTitle !== undefined) setBookTitle(saved.bookTitle);
+        if (saved.bookAuthor !== undefined) setBookAuthor(saved.bookAuthor || "");
+        if (saved.chapters !== undefined) setChapters(saved.chapters);
+        if (saved.history !== undefined) setHistory(saved.history);
+        if (saved.projectCharCount !== undefined) setProjectCharCount(saved.projectCharCount);
+      } catch (err) {
+        console.error("Error cargando persistencia local:", err);
+      } finally {
+        setIsReady(true);
+      }
+    };
+    init();
+  }, []);
+
+  useEffect(() => {
     const syncUser = async () => {
       if (session?.user) {
         // Cargar historial de la nube (funde con local si es necesario, por ahora reemplaza o añade)
