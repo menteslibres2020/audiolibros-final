@@ -202,10 +202,7 @@ ${chunk}`;
             contents: [{ parts: [{ text: `${prompt} \n\nIMPORTANT: Generate image in ${arText}` }] }],
             generationConfig: {
               responseModalities: ["IMAGE"],
-              // Intentar pasar aspect ratio en la config de generación (Soportado en versiones recientes)
-              // Nota: La API puede requerir formato específico, probamos string directo.
-              // Algunos modelos Gemini Image pueden soportar 'imageGenerationConfig: { aspectRatio: "16:9" }'
-              // pero no es universal en todas las versiones de Flash. El prompt es más robusto.
+              aspectRatio: aspectRatio // Agregamos explícitamente el parámetro para modelos que lo soporten
             }
           };
 
