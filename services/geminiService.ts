@@ -199,11 +199,8 @@ ${chunk}`;
 
           body = {
             contents: [{ parts: [{ text: `Generate a ${arText} image. ${prompt}` }] }],
-            generationConfig: {
-              responseModalities: ["IMAGE"],
-              // Quitamos aspectRatio del config porque crashea el modelo preview.
-              // Confiamos en el prompt injection.
-            }
+            // generationConfig removido para evitar error 400 "responseModalities not supported"
+            // El modelo gemini-2.5-flash-image-preview debe inferir la tarea por el prompt.
           };
 
         } else {
