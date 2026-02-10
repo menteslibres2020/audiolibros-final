@@ -173,13 +173,17 @@ ${chunk}`;
 
     // Intentar con varios modelos conocidos
     // El usuario solicita explícitamente "Gemini 2.5 Flash Preview".
-    // Para generación de imágenes via generateContent, usamos los modelos multimodales.
+    // Restauramos también los modelos anteriores que el usuario menciona que funcionaban.
     const models = [
-      'gemini-2.5-flash-image-preview', // SOLICITADO Y PRIORIZADO
-      'gemini-2.5-flash-preview',
-      'gemini-2.0-flash',
-      'gemini-2.0-flash-exp',
-      'imagen-3.0-generate-001',
+      'gemini-2.5-flash-image-preview', // SOLICITADO EXPLICITAMENTE
+      'gemini-2.0-flash-image-preview', // Estaba antes
+      'gemini-2.0-flash-image', // Estaba antes
+      'gemini-2.5-flash-image', // Estaba antes
+
+      'gemini-2.0-flash', // Generico 2.0
+      'gemini-2.0-flash-exp', // Experimental 
+
+      'imagen-3.0-generate-001', // Imagen 3
     ];
 
     let lastError = null;
