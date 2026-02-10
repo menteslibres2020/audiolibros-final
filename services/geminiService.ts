@@ -175,9 +175,7 @@ ${chunk}`;
     // El usuario confirma que "hace unas implementaciones funcionaba".
     // PROHIBIDO TOCAR ESTA CONFIGURACIÓN DE MODELOS - FUNCIONA CORRECTAMENTE
     const models = [
-      'gemini-2.5-flash-image', // MODELO PRINCIPAL - NO CAMBIAR
-      'gemini-2.5-flash-image-preview',
-      'gemini-2.0-flash',
+      'gemini-2.5-flash-image', // MODELO EXCLUSIVO SOLICITADO
     ];
 
     let lastError = null;
@@ -192,15 +190,24 @@ ${chunk}`;
           url = `/api/gemini/v1beta/models/${model}:generateContent`;
 
           let arText = "";
-          if (aspectRatio === '16:9') arText = "Wide cinematic 16:9 aspect ratio";
-          else if (aspectRatio === '9:16') arText = "Vertical mobile 9:16 aspect ratio";
-          else arText = "Square 1:1 aspect ratio";
+          let arSuffix = "";
+          if (aspectRatio === '16:9') {
+            arText = "Wide cinematic and panoramic (16:9)";
+            arSuffix = " --ar 16:9";
+          }
+          else if (aspectRatio === '9:16') {
+            arText = "Tall vertical mobile (9:16)";
+            arSuffix = " --ar 9:16";
+          }
+          else {
+            arText = "Square (1:1)";
+            arSuffix = " --ar 1:1";
+          }
 
           body = {
-            contents: [{ parts: [{ text: `Generate a ${arText} image. ${prompt}` }] }],
+            contents: [{ parts: [{ text: `Generate a ${arText} image. ${prompt} ${arSuffix}` }] }],
             generationConfig: {
               responseModalities: ["IMAGE"],
-              aspectRatio: aspectRatio, // Enviamos el ratio explícitamente (ej: "16:9")
               speechConfig: undefined,
             }
           };
