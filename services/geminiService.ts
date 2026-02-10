@@ -171,12 +171,12 @@ ${chunk}`;
     }
 
 
-    // Intentar con varios modelos conocidos - PRIORIZANDO EL QUE FUNCIONA + SOPORTE ASPECT RATIO
+    // Intentar con varios modelos conocidos
+    // SOLICITADO POR USUARIO: TENEMOS PROHIBIDO CAMBIAR ESTE MODELO
     const models = [
-      'gemini-2.5-flash-image', // Modelo producción (mejor soporte aspect ratio)
-      'gemini-2.5-flash-image-preview', // Solicitado por usuario
-      'gemini-2.0-flash-image-preview',
+      'gemini-2.5-flash-image-preview', // PRIORIDAD ABSOLUTA
       'gemini-2.0-flash',
+      'gemini-2.0-flash-exp',
       'imagen-3.0-generate-001',
     ];
 
@@ -192,23 +192,20 @@ ${chunk}`;
           // API Gemini: generateContent
           url = `/api/gemini/v1beta/models/${model}:generateContent`;
 
-          // Mapear aspect ratio a texto descriptivo para el prompt (Refuerzo)
+          // Mapear aspect ratio a texto descriptivo - INYECTADO AL INICIO DEL PROMPT
           let arText = "";
-          if (aspectRatio === '16:9') arText = "Wide cinematic format, 16:9 aspect ratio.";
-          else if (aspectRatio === '9:16') arText = "Vertical vertical format for mobile, 9:16 aspect ratio.";
-          else arText = "Square format, 1:1 aspect ratio.";
+          if (aspectRatio === '16:9') arText = "Wide cinematic 16:9 aspect ratio";
+          else if (aspectRatio === '9:16') arText = "Vertical mobile 9:16 aspect ratio";
+          else arText = "Square 1:1 aspect ratio";
 
           body = {
-            contents: [{ parts: [{ text: `${prompt} \n\nIMPORTANT: Generate image in ${arText}` }] }],
+            contents: [{ parts: [{ text: `Generate a ${arText} image. ${prompt}` }] }],
             generationConfig: {
               responseModalities: ["IMAGE"],
-              aspectRatio: aspectRatio // Agregamos explícitamente el parámetro para modelos que lo soporten
+              // Quitamos aspectRatio del config porque crashea el modelo preview.
+              // Confiamos en el prompt injection.
             }
           };
-
-          // Agregamos parameters si el modelo lo soporta en generationConfig (algunos lo hacen)
-          // OJO: La API de Gemini a veces usa 'mediaResolution' o similar.
-          // Para asegurar, lo mandamos en el prompt que es lo más efectivo en modelos Flash.
 
         } else {
           // API Imagen: predict
