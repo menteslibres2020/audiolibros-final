@@ -29,6 +29,7 @@ const App: React.FC = () => {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [mergingChapterId, setMergingChapterId] = useState<string | null>(null);
   const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null);
+  const [generatingImageId, setGeneratingImageId] = useState<string | null>(null);
   const [tempSegmentText, setTempSegmentText] = useState('');
   const [showStats, setShowStats] = useState(true);
   const [history, setHistory] = useState<NarrationResult[]>([]);
@@ -259,6 +260,48 @@ const App: React.FC = () => {
   const cancelEdit = () => {
     setEditingSegmentId(null);
     setTempSegmentText('');
+  };
+
+  const handleGenerateImage = async (chapterId: string, segmentId: string, aspectRatio: '1:1' | '16:9' | '9:16') => {
+    if (loading || generatingImageId) return;
+    setGeneratingImageId(segmentId);
+
+    // Find segment and context
+    const chapter = chapters.find(c => c.id === chapterId);
+    const segment = chapter?.segments?.find(s => s.id === segmentId);
+
+    if (!chapter || !segment) {
+      setGeneratingImageId(null);
+      return;
+    }
+
+    try {
+      const context = `Libro: ${bookTitle || projectTitle} - Autor: ${bookAuthor}. Capítulo: ${chapter.title}`;
+      // 1. Generar Prompt Contextual
+      const prompt = await ttsService.generateImagePrompt(segment.content, context);
+
+      // 2. Generar Imagen
+      const imageUrl = await ttsService.generateImage(prompt, aspectRatio);
+
+      // 3. Actualizar Estado
+      const newChapters = chapters.map(ch => {
+        if (ch.id !== chapterId) return ch;
+        return {
+          ...ch,
+          segments: ch.segments?.map(s => {
+            if (s.id !== segmentId) return s;
+            return { ...s, imageUrl, imagePrompt: prompt };
+          })
+        };
+      });
+      setChapters(newChapters);
+      await persistenceService.saveState({ chapters: newChapters });
+
+    } catch (e: any) {
+      alert("Error generando imagen: " + e.message);
+    } finally {
+      setGeneratingImageId(null);
+    }
   };
 
   const handleDownloadChapter = async (chapter: EpubChapter) => {
@@ -649,6 +692,71 @@ const App: React.FC = () => {
                                     <audio src={seg.audioUrl} controls className="h-8 w-full" />
                                   </div>
                                 )}
+
+                                {/* SECCION DE IMAGEN */}
+                                <div className="mt-4 pt-4 border-t border-slate-100">
+                                  {seg.imageUrl ? (
+                                    <div className="relative group overflow-hidden rounded-xl border border-slate-200">
+                                      <img src={seg.imageUrl} alt="Ilustración IA" className="w-full h-auto object-cover" />
+                                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                        <button
+                                          onClick={() => {
+                                            if (confirm('¿Borrar imagen?')) {
+                                              const newChapters = chapters.map(c => {
+                                                if (c.id !== chapter.id) return c;
+                                                return { ...c, segments: c.segments?.map(s => s.id === seg.id ? { ...s, imageUrl: undefined } : s) };
+                                              });
+                                              setChapters(newChapters);
+                                              persistenceService.saveState({ chapters: newChapters });
+                                            }
+                                          }}
+                                          className="p-2 bg-white text-red-500 rounded-full hover:bg-red-50"
+                                        >
+                                          <i className="fa-solid fa-trash-can"></i>
+                                        </button>
+                                        <a href={seg.imageUrl} download={`ilustracion_${seg.id}.jpg`} target="_blank" rel="noreferrer" className="p-2 bg-white text-indigo-600 rounded-full hover:bg-indigo-50">
+                                          <i className="fa-solid fa-download"></i>
+                                        </a>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="flex flex-col gap-2">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest"><i className="fa-solid fa-image mr-1"></i> Generar Arte IA</span>
+                                        {generatingImageId === seg.id && <span className="text-[9px] text-indigo-500 font-bold animate-pulse">CREANDO OBRA MAESTRA...</span>}
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={() => handleGenerateImage(chapter.id, seg.id, '16:9')}
+                                          disabled={!!generatingImageId}
+                                          className="flex-1 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 rounded-lg text-[10px] font-bold transition-colors flex flex-col items-center gap-1"
+                                          title="Youtube / PC"
+                                        >
+                                          <div className="w-4 h-2.5 border border-current rounded-sm"></div>
+                                          16:9
+                                        </button>
+                                        <button
+                                          onClick={() => handleGenerateImage(chapter.id, seg.id, '1:1')}
+                                          disabled={!!generatingImageId}
+                                          className="flex-1 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 rounded-lg text-[10px] font-bold transition-colors flex flex-col items-center gap-1"
+                                          title="Instagram / Cuadrado"
+                                        >
+                                          <div className="w-3 h-3 border border-current rounded-sm"></div>
+                                          1:1
+                                        </button>
+                                        <button
+                                          onClick={() => handleGenerateImage(chapter.id, seg.id, '9:16')}
+                                          disabled={!!generatingImageId}
+                                          className="flex-1 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 rounded-lg text-[10px] font-bold transition-colors flex flex-col items-center gap-1"
+                                          title="TikTok / Reels"
+                                        >
+                                          <div className="w-2.5 h-4 border border-current rounded-sm"></div>
+                                          9:16
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             ))}
                           </div>

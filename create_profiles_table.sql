@@ -1,9 +1,6 @@
 -- 1. Crear tabla de perfiles (Vinculada a auth.users)
-create table public.profiles (
   id uuid not null references auth.users on delete cascade,
   email text,
-  is_pro boolean default false,
-  stripe_customer_id text,
   full_name text,
   avatar_url text,
   primary key (id)

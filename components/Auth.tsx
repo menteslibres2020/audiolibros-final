@@ -10,7 +10,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [isLogin, setIsLogin] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
     const [isForgotPassword, setIsForgotPassword] = useState(false);
@@ -28,21 +27,13 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                 });
                 if (error) throw error;
                 setMessage('Email de recuperación enviado. Revisa tu bandeja de entrada.');
-            } else if (isLogin) {
+            } else {
                 const { error } = await supabase.auth.signInWithPassword({
                     email,
                     password,
                 });
                 if (error) throw error;
                 onAuthSuccess();
-            } else {
-                const { error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                });
-                if (error) throw error;
-                setMessage('Registro exitoso! Revisa tu email e inicia sesión.');
-                setIsLogin(true); // Auto-switch to login
             }
         } catch (err: any) {
             setError(err.message);
@@ -94,31 +85,15 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                 {/* Lado Derecho: Formulario */}
                 <div className="flex-1 p-8 md:p-12 lg:p-16 flex flex-col justify-center bg-white relative">
                     <div className="max-w-sm mx-auto w-full space-y-6">
-                        {/* Tabs de Navegación */}
-                        <div className="flex p-1 bg-slate-50 rounded-xl border border-slate-100">
-                            <button
-                                type="button"
-                                onClick={() => { setIsLogin(true); setError(null); setMessage(null); }}
-                                className={`flex-1 py-3 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all ${isLogin ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5' : 'text-slate-400 hover:text-slate-500'}`}
-                            >
-                                Iniciar Sesión
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => { setIsLogin(false); setError(null); setMessage(null); }}
-                                className={`flex-1 py-3 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all ${!isLogin ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5' : 'text-slate-400 hover:text-slate-500'}`}
-                            >
-                                Registrarse
-                            </button>
-                        </div>
+
                         <div className="text-center md:text-left">
                             <h1 className="text-3xl font-black text-slate-900 mb-2">
-                                {isForgotPassword ? 'Recuperar Contraseña' : (isLogin ? 'Bienvenido de nuevo' : 'Crea tu cuenta')}
+                                {isForgotPassword ? 'Recuperar Contraseña' : 'Acceso Privado'}
                             </h1>
                             <p className="text-slate-500 font-medium">
                                 {isForgotPassword
                                     ? 'Ingresa tu correo para recibir un enlace de recuperación.'
-                                    : (isLogin ? 'Ingresa tus credenciales para continuar.' : 'Regístrate para acceder al estudio.')}
+                                    : 'Ingresa tus credenciales para acceder al estudio.'}
                             </p>
                         </div>
 
@@ -155,7 +130,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         className="w-full pl-11 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none font-bold text-slate-700 transition-all placeholder:text-slate-300"
-                                        placeholder="hola@ejemplo.com"
+                                        placeholder="usuario@estudio.com"
                                         required
                                     />
                                 </div>
@@ -177,17 +152,15 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                                             required={!isForgotPassword}
                                         />
                                     </div>
-                                    {isLogin && (
-                                        <div className="text-right">
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsForgotPassword(true)}
-                                                className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wide"
-                                            >
-                                                ¿Olvidaste tu contraseña?
-                                            </button>
-                                        </div>
-                                    )}
+                                    <div className="text-right">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsForgotPassword(true)}
+                                            className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wide"
+                                        >
+                                            ¿Olvidaste tu contraseña?
+                                        </button>
+                                    </div>
                                 </div>
                             )}
 
@@ -199,9 +172,9 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                                 {loading ? (
                                     <i className="fa-solid fa-circle-notch animate-spin"></i>
                                 ) : (
-                                    <i className={`fa-solid ${isForgotPassword ? 'fa-paper-plane' : (isLogin ? 'fa-arrow-right-to-bracket' : 'fa-rocket')}`}></i>
+                                    <i className={`fa-solid ${isForgotPassword ? 'fa-paper-plane' : 'fa-arrow-right-to-bracket'}`}></i>
                                 )}
-                                {loading ? 'PROCESANDO...' : (isForgotPassword ? 'ENVIAR ENLACE' : (isLogin ? 'INICIAR SESIÓN' : 'CREAR CUENTA'))}
+                                {loading ? 'PROCESANDO...' : (isForgotPassword ? 'ENVIAR ENLACE' : 'INGRESAR AL ESTUDIO')}
                             </button>
 
                             {isForgotPassword && (
@@ -214,8 +187,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                                 </button>
                             )}
                         </form>
-
-                        {/* Botón inferior eliminado por redundancia con Tabs */}
                     </div>
                 </div>
             </div>

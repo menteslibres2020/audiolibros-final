@@ -6,6 +6,8 @@ export interface EpubSegment {
   content: string;
   status: 'pending' | 'processing' | 'completed' | 'error';
   audioUrl?: string;
+  imageUrl?: string;
+  imagePrompt?: string;
   charCount: number;
 }
 
@@ -134,7 +136,7 @@ export class EpubService {
   }
 
   private splitIntoManageableChunks(text: string): EpubSegment[] {
-    const MAX_CHARS = 3000;
+    const MAX_CHARS = 2000;
     const paragraphs = text.split(/\n+/);
     const segments: EpubSegment[] = [];
 

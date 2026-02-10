@@ -163,7 +163,7 @@ ${chunk}`;
     return URL.createObjectURL(wavBlob);
   }
 
-  async generateImage(prompt: string): Promise<string> {
+  async generateImage(prompt: string, aspectRatio: '1:1' | '16:9' | '9:16' = '1:1'): Promise<string> {
     const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
@@ -173,9 +173,7 @@ ${chunk}`;
 
     // Intentar con varios modelos conocidos - GEMINI 2.5 PRIORIZADO
     const models = [
-      'gemini-2.5-flash-image', // SOLICITADO POR EL USUARIO (Oficial)
-      'gemini-2.0-flash-image',
-      'gemini-2.0-flash-image-preview',
+      'gemini-2.0-flash-image', // SOLICITADO POR EL USUARIO (Oficial en algunos endpoints) - A veces falla con aspect ratio, fallback a imagen
       'imagen-3.0-generate-001',
       'imagen-3.0-generate-002',
     ];
@@ -196,8 +194,12 @@ ${chunk}`;
             generationConfig: {
               responseModalities: ["IMAGE"], // Forzar salida de imagen
               speechConfig: undefined, // Asegurar que no vaya config de audio
+              // Gemini 2.0 Flash Image a veces soporta aspect ratio en el prompt, pero no en config explícito en todas las versiones.
+              // Intentaremos pasarlo en el prompt si es Gemini.
             }
           };
+          // Hack para Gemini Image: Añadir aspect ratio al prompt
+          (body as any).contents[0].parts[0].text = `${prompt} --aspect-ratio ${aspectRatio}`;
         } else {
           // API Imagen: predict
           url = `/api/gemini/v1beta/models/${model}:predict`;
@@ -207,7 +209,7 @@ ${chunk}`;
             ],
             parameters: {
               sampleCount: 1,
-              aspectRatio: "1:1",
+              aspectRatio: aspectRatio, // Soporta "1:1", "16:9", "9:16", "3:4", "4:3"
               safetySetting: "block_medium_and_above",
               personGeneration: "allow_adult",
             }
@@ -233,6 +235,7 @@ ${chunk}`;
             lastError = new Error(`Error API Imagen (${response.status}): ${errText}`);
             continue;
           }
+          // Si es 400 y es por aspect ratio en Gemini, talvez deberíamos fallar y probar Imagen
           console.error("API Error Body:", errText);
           throw new Error(`Error API Imagen (${response.status}): ${errText.substring(0, 100)}`);
         }
@@ -272,6 +275,35 @@ ${chunk}`;
     }
 
     throw lastError || new Error("No se pudo generar imagen con ninguno de los modelos disponibles.");
+  }
+
+  async generateImagePrompt(fragmentText: string, context: string): Promise<string> {
+    const ai = this.getAIInstance();
+    const prompt = `
+      Rol: Eres un director de arte experto en ilustración de libros.
+      Tarea: Crear un PROMPT DE IMAGEN en INGLÉS detallado y artístico para acompañar un fragmento de audiolibro.
+      
+      Contexto del Libro: ${context}
+      
+      Fragmento Actual: "${fragmentText.substring(0, 500)}..."
+      
+      Instrucciones:
+      1. Analiza el fragmento y su emoción.
+      2. Diseña una escena visual que represente este momento, manteniendo coherencia con el estilo del libro.
+      3. El output debe ser SOLO el prompt en inglés. Sin explicaciones.
+      4. Estilo visual sugerido: Cinematic, detailed, concept art, 8k resolution.
+      `;
+
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: [{ parts: [{ text: prompt }] }]
+      });
+      return response.candidates?.[0]?.content?.parts?.[0]?.text || "A cinematic scene representing an audiobook narration.";
+    } catch (error) {
+      console.error("Error generando prompt de imagen:", error);
+      return "A cinematic scene representing an audiobook narration.";
+    }
   }
   async analyzeAudioForVideo(audioBlob: Blob | File): Promise<string[]> {
     const ai = this.getAIInstance();
