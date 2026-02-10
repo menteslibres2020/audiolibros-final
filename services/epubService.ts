@@ -38,7 +38,7 @@ export class EpubService {
     const zip = await JSZip.loadAsync(file);
     const containerXml = await zip.file("META-INF/container.xml")?.async("string");
     if (!containerXml) throw new Error("No es un archivo ePub válido");
-    
+
     const opfPath = containerXml.match(/full-path="([^"]+)"/)?.[1];
     if (!opfPath) throw new Error("No se pudo encontrar el manifiesto");
 
@@ -69,21 +69,21 @@ export class EpubService {
       const href = spineItems[i];
       const fullPath = baseDir + href;
       const contentHtml = await zip.file(fullPath)?.async("string");
-      
+
       if (contentHtml) {
         const doc = parser.parseFromString(contentHtml, "text/html");
-        
+
         // Limpieza profunda de elementos HTML no deseados
         doc.querySelectorAll('script, style, nav, footer, header, hr, aside, .index, .toc').forEach(el => el.remove());
-        
+
         let chapterTitle = doc.querySelector('h1, h2, h3')?.textContent?.trim();
         let text = doc.body.innerText.trim();
-        
+
         // Filtro agresivo de basura
-        if (this.isGarbageContent(text, title, author, chapterTitle)) continue; 
+        if (this.isGarbageContent(text, title, author, chapterTitle)) continue;
 
         const cleaned = text.replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').replace(/[ \t]+/g, ' ').trim();
-        
+
         // Solo aceptamos capítulos con suficiente contenido real
         if (cleaned.length > 100) {
           const segments = this.splitIntoManageableChunks(cleaned);
@@ -108,10 +108,10 @@ export class EpubService {
     const lowerTitle = chapterTitle?.toLowerCase() || "";
 
     // 1. Check keywords en el texto o el título
-    const hasGarbageWord = this.garbageKeywords.some(keyword => 
+    const hasGarbageWord = this.garbageKeywords.some(keyword =>
       lowerText.includes(keyword.toLowerCase()) || lowerTitle.includes(keyword.toLowerCase())
     );
-    
+
     // Si es muy corto y tiene una palabra basura, fuera.
     if (text.length < 2000 && hasGarbageWord) return true;
 
@@ -126,36 +126,65 @@ export class EpubService {
 
     // 3. Solo título o autor (páginas de respeto)
     if (text.length < 500 && (lowerText.includes(title.toLowerCase()) || lowerText.includes(author.toLowerCase()))) {
-        // A menos que sea un capítulo real, suele ser basura
-        if (lines.length < 10) return true;
+      // A menos que sea un capítulo real, suele ser basura
+      if (lines.length < 10) return true;
     }
 
     return false;
   }
 
   private splitIntoManageableChunks(text: string): EpubSegment[] {
-    const targetLength = Math.ceil(text.length / this.MAX_FRAGMENTS_PER_CHAPTER);
-    const paragraphs = text.split(/\n+/).filter(p => p.trim().length > 0);
-    
-    let result: string[] = [];
-    let current = "";
+    const MAX_CHARS = 3000;
+    const paragraphs = text.split(/\n+/);
+    const segments: EpubSegment[] = [];
 
-    for (const p of paragraphs) {
-      if ((current.length + p.length > targetLength) && result.length < this.MAX_FRAGMENTS_PER_CHAPTER - 1) {
-        if (current.trim()) result.push(current.trim());
-        current = p;
-      } else {
-        current += (current ? "\n\n" : "") + p;
+    let currentChunk = "";
+
+    for (const paragraph of paragraphs) {
+      // Si el párrafo actual ya excede el límite (caso raro de párrafo gigante), lo cortamos a la fuerza
+      if (paragraph.length > MAX_CHARS) {
+        if (currentChunk) {
+          segments.push(this.createSegment(currentChunk));
+          currentChunk = "";
+        }
+        // Cortar párrafo gigante en pedazos de 3000
+        let tempP = paragraph;
+        while (tempP.length > 0) {
+          let slice = tempP.slice(0, MAX_CHARS);
+          // Intentar cortar en un punto y seguido para no dejar frases cortadas
+          const lastPeriod = slice.lastIndexOf('.');
+          if (lastPeriod > MAX_CHARS * 0.8) {
+            slice = tempP.slice(0, lastPeriod + 1);
+          }
+          segments.push(this.createSegment(slice));
+          tempP = tempP.slice(slice.length).trim();
+        }
+      }
+      // Si sumar este párrafo no pasa el límite, lo acumulamos
+      else if (currentChunk.length + paragraph.length < MAX_CHARS) {
+        currentChunk += (currentChunk ? "\n\n" : "") + paragraph;
+      }
+      // Si pasa el límite, guardamos el chunk actual y empezamos uno nuevo con este párrafo
+      else {
+        segments.push(this.createSegment(currentChunk));
+        currentChunk = paragraph;
       }
     }
-    if (current.trim()) result.push(current.trim());
 
-    return result.map(content => ({
+    if (currentChunk.trim()) {
+      segments.push(this.createSegment(currentChunk));
+    }
+
+    return segments;
+  }
+
+  private createSegment(content: string): EpubSegment {
+    return {
       id: `seg-${Math.random().toString(36).substr(2, 9)}`,
       content: content.trim(),
       status: 'pending',
       charCount: content.trim().length
-    }));
+    };
   }
 }
 
