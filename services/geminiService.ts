@@ -173,11 +173,11 @@ ${chunk}`;
 
     // RESTAURACION TOTAL DE CONFIGURACION ORIGINAL (Step 82)
     // El usuario confirma que "hace unas implementaciones funcionaba".
-    // En el inicio de la sesión (Step 82), el código usaba 'gemini-2.5-flash-image' con 'generateContent'.
+    // PROHIBIDO TOCAR ESTA CONFIGURACIÓN DE MODELOS - FUNCIONA CORRECTAMENTE
     const models = [
-      'gemini-2.5-flash-image', // ESTE ESTABA EN EL CODIGO ORIGINAL QUE FUNCIONABA
-      'gemini-2.5-flash-image-preview', // Variente solicitada por nombre
-      'gemini-2.0-flash', // Fallback
+      'gemini-2.5-flash-image', // MODELO PRINCIPAL - NO CAMBIAR
+      'gemini-2.5-flash-image-preview',
+      'gemini-2.0-flash',
     ];
 
     let lastError = null;
@@ -200,6 +200,7 @@ ${chunk}`;
             contents: [{ parts: [{ text: `Generate a ${arText} image. ${prompt}` }] }],
             generationConfig: {
               responseModalities: ["IMAGE"],
+              aspectRatio: aspectRatio, // Enviamos el ratio explícitamente (ej: "16:9")
               speechConfig: undefined,
             }
           };
