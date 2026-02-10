@@ -197,7 +197,9 @@ const App: React.FC = () => {
       let finalAudioUrl = audioUrl;
       let finalId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
 
-      // Auto-Sync a la Nube (Supabase)
+      // Auto-Sync a la Nube (Supabase) - DESACTIVADO POR PETICIÓN DEL USUARIO
+      // El usuario prefiere descarga local inmediata y no guardar en DB para ahorrar espacio/ancho de banda.
+      /*
       try {
         const res = await fetch(audioUrl);
         const blob = await res.blob();
@@ -214,6 +216,7 @@ const App: React.FC = () => {
       } catch (cloudErr) {
         console.error("Error sync nube:", cloudErr);
       }
+      */
 
       const historyItem: NarrationResult = {
         id: finalId,
