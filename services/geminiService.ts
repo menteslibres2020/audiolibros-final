@@ -175,11 +175,11 @@ ${chunk}`;
     // El usuario solicita explícitamente "Gemini 2.5 Flash Preview".
     // Para generación de imágenes via generateContent, usamos los modelos multimodales.
     const models = [
-      'gemini-2.0-flash', // Modelo principal con soporte de imagen
-      'gemini-2.0-flash-exp', // Modelo experimental
-      'gemini-2.5-flash-preview', // Solicitado por usuario (si existe)
-      'gemini-1.5-flash', // Fallback estable
-      'imagen-3.0-generate-001', // Fallback Vertex
+      'gemini-2.5-flash-image-preview', // SOLICITADO Y PRIORIZADO
+      'gemini-2.5-flash-preview',
+      'gemini-2.0-flash',
+      'gemini-2.0-flash-exp',
+      'imagen-3.0-generate-001',
     ];
 
     let lastError = null;
