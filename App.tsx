@@ -14,8 +14,6 @@ import JSZip from 'jszip';
 import { supabase } from './lib/supabaseClient';
 import Auth from './components/Auth';
 import { Session } from '@supabase/supabase-js';
-import SubscriptionGate from './components/SubscriptionGate';
-import { stripeService } from './services/stripeService';
 import { cloudService } from './services/cloudService';
 import ResetPasswordModal from './components/ResetPasswordModal';
 import CoverGenerator from './components/CoverGenerator';
@@ -47,7 +45,6 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [isPro, setIsPro] = useState(false);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [showCoverGenerator, setShowCoverGenerator] = useState(false);
@@ -71,45 +68,9 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        const saved = await persistenceService.loadState();
-        if (saved.text !== undefined) setText(saved.text);
-        if (saved.projectTitle !== undefined) setProjectTitle(saved.projectTitle);
-        if (saved.voiceId !== undefined) setVoiceId(saved.voiceId);
-        if (saved.emotion !== undefined) setEmotion(saved.emotion);
-        if (saved.mode !== undefined) setMode(saved.mode);
-        if (saved.bookTitle !== undefined) setBookTitle(saved.bookTitle);
-        if (saved.bookAuthor !== undefined) setBookAuthor(saved.bookAuthor || "");
-        if (saved.chapters !== undefined) setChapters(saved.chapters);
-        if (saved.history !== undefined) setHistory(saved.history);
-        if (saved.projectCharCount !== undefined) setProjectCharCount(saved.projectCharCount);
-      } catch (err) {
-        console.error("Error cargando persistencia local:", err);
-      } finally {
-        setIsReady(true);
-      }
-    };
-    init();
-  }, []);
-
-  // Reaccionar a cambios de sesión (Login/Logout) para verificar status PRO y nube
-  useEffect(() => {
     const syncUser = async () => {
       if (session?.user) {
-        // 1. Verificar Suscripción
-        const params = new URLSearchParams(window.location.search);
-        const status = await stripeService.checkSubscriptionStatus(session.user.id);
-        const isSuccessParam = params.get('status') === 'success';
-
-        if (isSuccessParam) {
-          window.history.replaceState({}, document.title, "/");
-          alert("¡Bienvenido a PRO! Gracias por suscribirte.");
-        }
-
-        setIsPro(status || isSuccessParam);
-
-        // 2. Cargar historial de la nube (funde con local si es necesario, por ahora reemplaza o añade)
+        // Cargar historial de la nube (funde con local si es necesario, por ahora reemplaza o añade)
         // Nota: Idealmente deberíamos fusionar, por ahora solo añadimos si local está vacío o simple append
         cloudService.fetchUserNarrations().then(cloudHistory => {
           if (cloudHistory.length > 0) {
@@ -123,8 +84,6 @@ const App: React.FC = () => {
             });
           }
         });
-      } else {
-        setIsPro(false);
       }
     };
 
@@ -415,7 +374,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <SubscriptionGate userEmail={session.user.email!} isPro={isPro}>
+    <>
       <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
         {/* Overlay global de narración activa */}
         {loading && processingId === 'manual' && (
@@ -763,27 +722,10 @@ const App: React.FC = () => {
               </div>
               <div>
                 <p className="font-bold text-slate-900 truncate px-4" title={session?.user?.email}>{session?.user?.email}</p>
-                <span className={`inline-block mt-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${isPro ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
-                  {isPro ? 'PLAN PRO ACTIVO 👑' : 'PLAN GRATUITO'}
-                </span>
               </div>
             </div>
 
             <div className="space-y-3">
-              <button
-                onClick={() => {
-                  const portalLink = import.meta.env.VITE_STRIPE_CUSTOMER_PORTAL;
-                  if (portalLink) {
-                    window.open(portalLink, '_blank');
-                  } else {
-                    alert("Para gestionar tu suscripción (cancelar, ver facturas, etc.), por favor revisa el correo de confirmación que recibiste de Stripe o usa el enlace del portal de cliente si lo tienes configurado.");
-                  }
-                }}
-                className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
-              >
-                <i className="fa-solid fa-credit-card"></i> Gestionar Suscripción
-              </button>
-
               <button
                 onClick={() => {
                   setShowAccountModal(false);
@@ -814,7 +756,7 @@ const App: React.FC = () => {
 
       {showResetPassword && <ResetPasswordModal onClose={() => setShowResetPassword(false)} />}
 
-    </SubscriptionGate>
+    </>
   );
 };
 
