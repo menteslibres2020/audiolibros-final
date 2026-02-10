@@ -206,8 +206,10 @@ ${chunk}`;
 
         } else {
           // API Imagen / Vertex-style: predict
-          // Se usa para 'imagen-3.0' y aparentemente para 'gemini-2.5-flash-image-preview'
-          url = `/api/gemini/v1beta/models/${model}:predict`;
+          // Se usa para 'imagen-3.0' y para 'gemini-2.5-flash-image-preview' (Image Generation model)
+          // El usuario indica específicamente que este modelo requiere V1, no V1beta, y endpoint predict.
+          // URL Proxy: /api/gemini/v1 -> https://generativelanguage.googleapis.com/v1
+          url = `/api/gemini/v1/models/${model}:predict`;
           body = {
             instances: [
               { prompt: prompt }
