@@ -171,19 +171,13 @@ ${chunk}`;
     }
 
 
-    // Intentar con varios modelos conocidos
-    // El usuario solicita explícitamente "Gemini 2.5 Flash Preview".
-    // Restauramos también los modelos anteriores que el usuario menciona que funcionaban.
+    // Intentar con varios modelos conocidos - PRIORIZANDO EL QUE FUNCIONA + SOPORTE ASPECT RATIO
     const models = [
-      'gemini-2.5-flash-image-preview', // SOLICITADO EXPLICITAMENTE
-      'gemini-2.0-flash-image-preview', // Estaba antes
-      'gemini-2.0-flash-image', // Estaba antes
-      'gemini-2.5-flash-image', // Estaba antes
-
-      'gemini-2.0-flash', // Generico 2.0
-      'gemini-2.0-flash-exp', // Experimental 
-
-      'imagen-3.0-generate-001', // Imagen 3
+      'gemini-2.5-flash-image', // Modelo producción (mejor soporte aspect ratio)
+      'gemini-2.5-flash-image-preview', // Solicitado por usuario
+      'gemini-2.0-flash-image-preview',
+      'gemini-2.0-flash',
+      'imagen-3.0-generate-001',
     ];
 
     let lastError = null;
@@ -197,17 +191,28 @@ ${chunk}`;
         if (model.includes('gemini')) {
           // API Gemini: generateContent
           url = `/api/gemini/v1beta/models/${model}:generateContent`;
+
+          // Mapear aspect ratio a texto descriptivo para el prompt (Refuerzo)
+          let arText = "";
+          if (aspectRatio === '16:9') arText = "Wide cinematic format, 16:9 aspect ratio.";
+          else if (aspectRatio === '9:16') arText = "Vertical vertical format for mobile, 9:16 aspect ratio.";
+          else arText = "Square format, 1:1 aspect ratio.";
+
           body = {
-            contents: [{ parts: [{ text: prompt }] }],
+            contents: [{ parts: [{ text: `${prompt} \n\nIMPORTANT: Generate image in ${arText}` }] }],
             generationConfig: {
-              responseModalities: ["IMAGE"], // Forzar salida de imagen
-              speechConfig: undefined, // Asegurar que no vaya config de audio
-              // Gemini 2.0 Flash Image a veces soporta aspect ratio en el prompt, pero no en config explícito en todas las versiones.
-              // Intentaremos pasarlo en el prompt si es Gemini.
+              responseModalities: ["IMAGE"],
+              // Intentar pasar aspect ratio en la config de generación (Soportado en versiones recientes)
+              // Nota: La API puede requerir formato específico, probamos string directo.
+              // Algunos modelos Gemini Image pueden soportar 'imageGenerationConfig: { aspectRatio: "16:9" }'
+              // pero no es universal en todas las versiones de Flash. El prompt es más robusto.
             }
           };
-          // Hack para Gemini Image: Añadir aspect ratio al prompt
-          (body as any).contents[0].parts[0].text = `${prompt} --aspect-ratio ${aspectRatio}`;
+
+          // Agregamos parameters si el modelo lo soporta en generationConfig (algunos lo hacen)
+          // OJO: La API de Gemini a veces usa 'mediaResolution' o similar.
+          // Para asegurar, lo mandamos en el prompt que es lo más efectivo en modelos Flash.
+
         } else {
           // API Imagen: predict
           url = `/api/gemini/v1beta/models/${model}:predict`;
@@ -217,7 +222,7 @@ ${chunk}`;
             ],
             parameters: {
               sampleCount: 1,
-              aspectRatio: aspectRatio, // Soporta "1:1", "16:9", "9:16", "3:4", "4:3"
+              aspectRatio: aspectRatio, // Soporta "16:9", "1:1", "9:16"
               safetySetting: "block_medium_and_above",
               personGeneration: "allow_adult",
             }
