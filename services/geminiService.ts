@@ -171,12 +171,13 @@ ${chunk}`;
     }
 
 
-    // Intentar con varios modelos conocidos
-    // SOLICITADO POR USUARIO: USO EXCLUSIVO DE LA GAMA GEMINI FLASH
-    // Eliminamos 'imagen' para evitar errores confusos si los Gemini fallan.
+    // RESTAURACION TOTAL DE CONFIGURACION ORIGINAL (Step 82)
+    // El usuario confirma que "hace unas implementaciones funcionaba".
+    // En el inicio de la sesión (Step 82), el código usaba 'gemini-2.5-flash-image' con 'generateContent'.
     const models = [
-      'gemini-2.5-flash-image-preview', // PRIORIDAD 1: Solicitado explícitamente
-      'gemini-2.0-flash', // PRIORIDAD 2: Fallback robusto
+      'gemini-2.5-flash-image', // ESTE ESTABA EN EL CODIGO ORIGINAL QUE FUNCIONABA
+      'gemini-2.5-flash-image-preview', // Variente solicitada por nombre
+      'gemini-2.0-flash', // Fallback
     ];
 
     let lastError = null;
@@ -186,13 +187,8 @@ ${chunk}`;
         let url = '';
         let body = {};
 
-        // Lógica de enrutamiento API
-        // Gemini 2.0 Flash y variantes estándar -> generateContent for Image
-        // Gemini 2.5 Flash Image Preview (y Imagen) -> predict (según comportamiento reportado)
-        const useGenerateContent = model.includes('gemini') && !model.includes('flash-image-preview');
-
-        if (useGenerateContent) {
-          // API Gemini Multimodal: generateContent
+        // Lógica ORIGINAL de Step 82 (v1beta + generateContent + responseModalities)
+        if (model.includes('gemini')) {
           url = `/api/gemini/v1beta/models/${model}:generateContent`;
 
           let arText = "";
@@ -202,25 +198,15 @@ ${chunk}`;
 
           body = {
             contents: [{ parts: [{ text: `Generate a ${arText} image. ${prompt}` }] }],
-          };
-
-        } else {
-          // API Imagen / Vertex-style: predict
-          // Se usa para 'imagen-3.0' y para 'gemini-2.5-flash-image-preview' (Image Generation model)
-          // El usuario indica específicamente que este modelo requiere V1, no V1beta, y endpoint predict.
-          // URL Proxy: /api/gemini/v1 -> https://generativelanguage.googleapis.com/v1
-          url = `/api/gemini/v1/models/${model}:predict`;
-          body = {
-            instances: [
-              { prompt: prompt }
-            ],
-            parameters: {
-              sampleCount: 1,
-              aspectRatio: aspectRatio,
-              safetySetting: "block_medium_and_above",
-              personGeneration: "allow_adult",
+            generationConfig: {
+              responseModalities: ["IMAGE"],
+              speechConfig: undefined,
             }
           };
+        } else {
+          // Fallback legacy (si se llegara a usar un modelo no-gemini)
+          url = `/api/gemini/v1beta/models/${model}:predict`;
+          body = { instances: [{ prompt: prompt }], parameters: { sampleCount: 1 } };
         }
 
         console.log(`Intentando generar imagen con modelo ${model} en URL ${url}...`);
