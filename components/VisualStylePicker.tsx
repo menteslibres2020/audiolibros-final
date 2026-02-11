@@ -10,34 +10,25 @@ interface VisualStylePickerProps {
 
 const VisualStylePicker: React.FC<VisualStylePickerProps> = ({ selected, onSelect, disabled }) => {
   const styles: VisualStyle[] = [
-    'Cinematic',
-    'Abstract Art',
-    'Oil Painting',
-    'Minimalist',
-    'Fantasy',
-    'Dark Noir'
+    'Cinematic', 'Photorealistic', 'Anime', 'Oil Painting',
+    'Cyberpunk', 'Watercolor', 'Sketch', '3D Render', 'Retro'
   ];
 
   return (
-    <div className="space-y-4">
-      <label className="block text-[10px] font-black text-[#94a3b8] dark:text-slate-500 uppercase tracking-widest mb-4">
-        Estilo Visual
-      </label>
-      <div className="grid grid-cols-2 gap-3">
-        {styles.map((style) => (
-          <button
-            key={style}
-            disabled={disabled}
-            onClick={() => onSelect(style)}
-            className={`py-3.5 px-6 rounded-2xl text-[12px] font-bold transition-all duration-200 border ${selected === style
-                ? 'bg-[#6366f1] border-[#6366f1] text-white shadow-lg shadow-indigo-100 dark:shadow-none'
-                : 'bg-white dark:bg-slate-800 border-[#f1f5f9] dark:border-slate-700 text-[#64748b] dark:text-slate-400 hover:border-[#6366f1]/30 hover:bg-indigo-50/30 dark:hover:bg-slate-700'
-              } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}`}
-          >
-            {style}
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-wrap gap-2">
+      {styles.map((style) => (
+        <button
+          key={style}
+          disabled={disabled}
+          onClick={() => onSelect(style)}
+          className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${selected === style
+              ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none'
+              : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600'
+            } ${disabled ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
+        >
+          {style}
+        </button>
+      ))}
     </div>
   );
 };
