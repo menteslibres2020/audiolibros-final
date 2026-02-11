@@ -167,59 +167,42 @@ ${chunk}`;
   async generateImage(prompt: string, aspectRatio: '1:1' | '16:9' | '9:16' | '3:4' | '4:3' = '1:1'): Promise<string> {
     const ai = this.getAIInstance();
 
-    // 1. Configuración de imagen
-    const imageConfig = {
-      aspectRatio: aspectRatio,
-      numberOfImages: 1,
-    };
-
-    // 2. Función helper para probar modelos en cascada
-    const tryGenerate = async (modelName: string) => {
-      console.log(`[ImageGen] Probando generateImages con modelo: ${modelName} | Ratio: ${aspectRatio}`);
-      return await ai.models.generateImages({
-        model: modelName,
-        prompt: prompt,
-        config: imageConfig
-      } as any);
-    };
-
     try {
-      let response;
+      console.log(`Generando imagen con modelo gemini-2.5-flash-image (vía generateContent). Ratio: ${aspectRatio}`);
 
-      // 3. Estrategia de Fallback:
-      // Intentamos primero el modelo solicitado por el usuario (Gemini 2.5)
-      // Si falla, probamos Gemini 2.0 Flash.
-      // Si falla, recurrimos al modelo nativo de imagen (Imagen 3) que soporta aspect ratio nativo.
-      try {
-        response = await tryGenerate('gemini-2.5-flash-image-preview');
-      } catch (err: any) {
-        console.warn(`[ImageGen] Fallo Gemini 2.5 Preview (${err.message}). Reintentando con Gemini 2.5 Stable...`);
-        try {
-          response = await tryGenerate('gemini-2.5-flash-image');
-        } catch (err2: any) {
-          console.warn(`[ImageGen] Fallo Gemini 2.5 Stable (${err2.message}). Intentando Gemini 2.0 Flash...`);
-          try {
-            response = await tryGenerate('gemini-2.0-flash');
-          } catch (err3: any) {
-            console.warn(`[ImageGen] Fallo Gemini 2.0 Flash (${err3.message}). Usando ESTÁNDAR DE INDUSTRIA: Imagen 3.`);
-            // Este es el modelo nativo de imagen de Google, el más robusto para generateImages
-            response = await tryGenerate('imagen-3.0-generate-001');
-          }
-        }
+      // Prompt Engineering agresivo: Prefijo para intentar forzar el ratio
+      const ratioMap: Record<string, string> = {
+        '1:1': 'Square 1:1 image',
+        '16:9': 'Wide 16:9 landscape image',
+        '9:16': 'Tall 9:16 portrait image',
+        '3:4': 'Vertical 3:4 image',
+        '4:3': 'Landscape 4:3 image'
+      };
+
+      const ratioDesc = ratioMap[aspectRatio] || 'Square 1:1 image';
+
+      // Colocamos la instrucción AL PRINCIO para mayor peso
+      const finalPrompt = `[Format: ${ratioDesc}]. ${prompt}`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: {
+          parts: [{ text: finalPrompt }]
+        },
+        // OJO: No pasar config de aspect ratio aquí porque este modelo la ignora o da error en generateContent.
+        // Confiamos 100% en el prompt.
+      } as any);
+
+      const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+
+      if (part?.inlineData) {
+        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
       }
 
-      // 4. Extracción de imagen
-      const imageBytes = response?.generatedImages?.[0]?.image?.imageBytes;
-
-      if (imageBytes) {
-        const mimeType = response.generatedImages?.[0]?.image?.mimeType || 'image/png';
-        return `data:${mimeType};base64,${imageBytes}`;
-      }
-
-      throw new Error("La IA no devolvió 'imageBytes' ni datos válidos.");
+      throw new Error("La IA no devolvió datos de imagen válidos.");
 
     } catch (error: any) {
-      console.error("Error FATAL generando imagen (todos los intentos fallaron):", error);
+      console.error("Error generando imagen:", error);
       throw new Error(`Fallo en generación de imagen: ${error.message}`);
     }
   }
