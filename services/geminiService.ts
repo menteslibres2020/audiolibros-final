@@ -168,31 +168,32 @@ ${chunk}`;
     const ai = this.getAIInstance();
 
     try {
-      console.log(`Generando imagen con modelo gemini-2.5-flash-image. Ratio: ${aspectRatio}`);
+      console.log(`Generando imagen con ai.models.generateImages y modelo gemini-2.5-flash-image. Ratio: ${aspectRatio}`);
 
-      const response = await ai.models.generateContent({
+      // Usamos el método ESPECÍFICO para generar imágenes del SDK nuevo
+      // Esto asegura que el parámetro aspectRatio se envíe en el lugar correcto ('GenerateImagesConfig')
+      const response = await ai.models.generateImages({
         model: 'gemini-2.5-flash-image',
-        contents: {
-          parts: [{ text: prompt }]
-        },
+        prompt: prompt, // prompt es sibling de config en generateImages
         config: {
           aspectRatio: aspectRatio,
-          generationConfig: {
-            aspectRatio: aspectRatio,
-          }
+          // numberOfImages: 1 (default)
         }
-      } as any);
+      } as any); // cast as any por si las tipos del SDK local están desactualizados vs la librería real
 
-      const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+      const imageBytes = response.generatedImages?.[0]?.image?.imageBytes;
 
-      if (part?.inlineData) {
-        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+      if (imageBytes) {
+        // El SDK suele devolver imageBytes en base64 raw.
+        // Intentamos deducir el mimeType o fallback a image/png
+        const mimeType = response.generatedImages?.[0]?.image?.mimeType || 'image/png';
+        return `data:${mimeType};base64,${imageBytes}`;
       }
 
-      throw new Error("La IA no devolvió datos de imagen válidos.");
+      throw new Error("La IA no devolvió 'imageBytes' ni datos válidos.");
 
     } catch (error: any) {
-      console.error("Error generando imagen:", error);
+      console.error("Error generando imagen (generateImages):", error);
       throw new Error(`Fallo en generación de imagen: ${error.message}`);
     }
   }
