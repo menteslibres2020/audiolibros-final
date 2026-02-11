@@ -189,22 +189,19 @@ ${chunk}`;
         if (model.includes('gemini')) {
           url = `/api/gemini/v1beta/models/${model}:generateContent`;
 
-          let arText = "";
-          let arSuffix = "";
+          // PROMPT ENGINEERING AGRESIVO PARA FORMATO
+          // Al no soportar generationConfig.aspectRatio en esta versión, forzamos vía texto.
+          let ratioInstruction = "";
           if (aspectRatio === '16:9') {
-            arText = "Wide cinematic (16:9)";
-            arSuffix = ", aspect ratio 16:9";
-          }
-          else if (aspectRatio === '9:16') {
-            arText = "Tall vertical (9:16)";
-            arSuffix = ", aspect ratio 9:16";
-          }
-          else {
-            arText = "Square (1:1)";
-            arSuffix = ", aspect ratio 1:1";
+            ratioInstruction = " --aspect-ratio 16:9";
+          } else if (aspectRatio === '9:16') {
+            ratioInstruction = " --aspect-ratio 9:16";
+          } else {
+            ratioInstruction = " --aspect-ratio 1:1";
           }
 
-          const finalPrompt = `Create a ${arText} image. ${prompt}. Ensure the image has an aspect ratio of ${aspectRatio.replace(':', ' to ')}.${arSuffix}`;
+          // Colocamos la instrucción AL FINAL, que suele funcionar mejor para parámetros en Gemini
+          const finalPrompt = `${prompt} ${ratioInstruction}`;
 
           body = {
             contents: [{ parts: [{ text: finalPrompt }] }],
