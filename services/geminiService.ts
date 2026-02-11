@@ -164,19 +164,22 @@ ${chunk}`;
     return URL.createObjectURL(wavBlob);
   }
 
-  async generateImage(prompt: string, aspectRatio: '1:1' | '16:9' | '9:16' | '3:4' = '1:1'): Promise<string> {
+  async generateImage(prompt: string, aspectRatio: '1:1' | '16:9' | '9:16' | '3:4' | '4:3' = '1:1'): Promise<string> {
     const ai = this.getAIInstance();
 
     try {
-      console.log(`Generando imagen con modelo gemini-2.5-flash-image. Ratio: ${aspectRatio}`);
+      console.log(`Generando imagen con modelo gemini-2.0-flash. Ratio: ${aspectRatio}`);
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
+        model: 'gemini-2.0-flash',
         contents: {
           parts: [{ text: prompt }]
         },
         config: {
           aspectRatio: aspectRatio,
+          generationConfig: {
+            aspectRatio: aspectRatio,
+          }
         }
       } as any);
 
