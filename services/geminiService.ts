@@ -165,124 +165,37 @@ ${chunk}`;
   }
 
   async generateImage(prompt: string, aspectRatio: '1:1' | '16:9' | '9:16' | '4:5' | '3:2' = '1:1'): Promise<string> {
-    const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+    const ai = this.getAIInstance();
 
-    if (!apiKey) {
-      throw new Error("API Key no configurada.");
-    }
+    try {
+      console.log(`Generando imagen con modelo gemini-2.5-flash-image. Ratio: ${aspectRatio}`);
 
-
-    // RESTAURACION TOTAL DE CONFIGURACION ORIGINAL (Step 82)
-    // El usuario confirma que "hace unas implementaciones funcionaba".
-    // PROHIBIDO TOCAR ESTA CONFIGURACIÓN DE MODELOS - FUNCIONA CORRECTAMENTE
-    const models = [
-      'gemini-2.5-flash-image', // MODELO EXCLUSIVO SOLICITADO
-    ];
-
-    let lastError = null;
-
-    for (const model of models) {
-      try {
-        let url = '';
-        let body = {};
-
-        // VOLVIENDO AL FORMATO QUE FUNCIONA (generateContent) PERO CON PROMPT ENGINEERING AGRESIVO
-        // El endpoint :predict dio 404. El usuario quiere sí o sí 16:9.
-
-        // 1. Endpoint y Modelo Standard
-        url = `/api/gemini/v1beta/models/${model}:generateContent`;
-
-        // 2. Prompt Engineering Ultra-Específico (Prefix + Suffix)
-        let arPrefix = "";
-        let arSuffix = "";
-
-        if (aspectRatio === '16:9') {
-          arPrefix = "Wide cinematic 16:9 aspect ratio image of";
-          arSuffix = " --ar 16:9";
-        } else if (aspectRatio === '9:16') {
-          arPrefix = "Tall 9:16 vertical aspect ratio image of";
-          arSuffix = " --ar 9:16";
-        } else if (aspectRatio === '4:5') {
-          arPrefix = "Portrait 4:5 aspect ratio image of";
-          arSuffix = " --ar 4:5";
-        } else if (aspectRatio === '3:2') {
-          arPrefix = "Classic 3:2 aspect ratio landscape image of";
-          arSuffix = " --ar 3:2";
-        } else {
-          arPrefix = "Square 1:1 image of";
-          arSuffix = " --ar 1:1";
-        }
-
-        // Prompt final: "Wide cinematic 16:9 aspect ratio image of [PROMPT] --ar 16:9"
-        // Esta estructura "sandwich" suele ser la más efectiva para forzar al modelo.
-        const finalPrompt = `${arPrefix} ${prompt} ${arSuffix}`;
-
-        body = {
-          contents: [{ parts: [{ text: finalPrompt }] }],
-          generationConfig: {
-            responseModalities: ["IMAGE"],
-          }
-        };
-
-        console.log(`Intentando generar imagen con modelo ${model} en URL ${url}...`);
-
-        const response = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": apiKey,
-          },
-          body: JSON.stringify(body),
-        });
-
-        if (!response.ok) {
-          const errText = await response.text();
-          // Si es 404, probamos el siguiente modelo
-          if (response.status === 404) {
-            console.warn(`Modelo ${model} no encontrado (404). Probando siguiente...`);
-            lastError = new Error(`Error API Imagen (${response.status}): ${errText}`);
-            continue;
-          }
-          // Si es 400 y es por aspect ratio en Gemini, talvez deberíamos fallar y probar Imagen
-          console.error("API Error Body:", errText);
-          throw new Error(`Error API Imagen (${response.status}): ${errText.substring(0, 100)}`);
-        }
-
-        const data = await response.json();
-
-        let base64Image = null;
-
-        // 1. Respuesta tipo Gemini (generateContent)
-        if (data.candidates && data.candidates[0]?.content?.parts) {
-          const part = data.candidates[0].content.parts.find((p: any) => p.inlineData);
-          if (part && part.inlineData && part.inlineData.data) {
-            base64Image = part.inlineData.data;
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: [
+          { parts: [{ text: prompt }] }
+        ],
+        config: {
+          responseModalities: [Modality.IMAGE],
+          // @ts-ignore
+          imageConfig: {
+            aspectRatio: aspectRatio,
           }
         }
-        // 2. Respuesta tipo Imagen Vertex (:predict)
-        else if (data.predictions && data.predictions.length > 0) {
-          const prediction = data.predictions[0];
-          if (prediction.bytesBase64Encoded) {
-            base64Image = prediction.bytesBase64Encoded;
-          } else if (typeof prediction === 'string') {
-            base64Image = prediction;
-          }
-        }
-        // 3. Respuesta tipo Imagen Legacy
-        else if (data.images && data.images.length > 0 && data.images[0].image64) {
-          base64Image = data.images[0].image64;
-        }
+      });
 
-        if (base64Image) {
-          return base64Image.startsWith('data:') ? base64Image : `data:image/jpeg;base64,${base64Image}`;
-        }
-      } catch (error: any) {
-        console.error(`Error con modelo ${model}:`, error);
-        lastError = error;
+      const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+
+      if (part?.inlineData) {
+        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
       }
-    }
 
-    throw lastError || new Error("No se pudo generar imagen con ninguno de los modelos disponibles.");
+      throw new Error("La IA no devolvió datos de imagen válidos.");
+
+    } catch (error: any) {
+      console.error("Error generando imagen:", error);
+      throw new Error(`Fallo en generación de imagen: ${error.message}`);
+    }
   }
 
   async generateImagePrompt(fragmentText: string, context: string): Promise<string> {
