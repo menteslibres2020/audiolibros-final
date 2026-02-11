@@ -168,12 +168,12 @@ ${chunk}`;
     const ai = this.getAIInstance();
 
     try {
-      console.log(`Generando imagen con ai.models.generateImages y modelo gemini-2.0-flash. Ratio: ${aspectRatio}`);
+      console.log(`Generando imagen con ai.models.generateImages y modelo gemini-2.5-flash-image-preview. Ratio: ${aspectRatio}`);
 
       // Usamos el método ESPECÍFICO para generar imágenes del SDK nuevo
       // Esto asegura que el parámetro aspectRatio se envíe en el lugar correcto ('GenerateImagesConfig')
       const response = await ai.models.generateImages({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash-image-preview',
         prompt: prompt, // prompt es sibling de config en generateImages
         config: {
           aspectRatio: aspectRatio,
