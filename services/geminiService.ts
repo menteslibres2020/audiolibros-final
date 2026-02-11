@@ -176,9 +176,7 @@ ${chunk}`;
           parts: [{ text: prompt }]
         },
         config: {
-          imageConfig: {
-            aspectRatio: aspectRatio,
-          }
+          aspectRatio: aspectRatio,
         }
       } as any);
 
