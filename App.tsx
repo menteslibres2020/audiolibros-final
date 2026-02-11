@@ -6,6 +6,8 @@ import { persistenceService } from './services/persistenceService.ts';
 import VoiceSelector from './components/VoiceSelector.tsx';
 import HistoryItem from './components/HistoryItem.tsx';
 import AudioMerger from './components/AudioMerger.tsx';
+import ImageCreatorTab from './components/ImageCreatorTab.tsx';
+
 
 
 import { VOICES, EMOTIONS } from './constants.ts';
@@ -37,7 +39,7 @@ const App: React.FC = () => {
   const [projectCharCount, setProjectCharCount] = useState(0);
   const [error, setError] = useState<{ message: string, isQuota?: boolean } | null>(null);
 
-  const [mode, setMode] = useState<'text' | 'epub' | 'merger' | 'music' | 'video' | 'image-creator'>('text');
+  const [mode, setMode] = useState<'text' | 'epub' | 'merger' | 'image-creator'>('text');
   const [bookTitle, setBookTitle] = useState('');
   const [bookAuthor, setBookAuthor] = useState('');
   const [chapters, setChapters] = useState<EpubChapter[]>([]);
@@ -472,7 +474,13 @@ const App: React.FC = () => {
                 <span className="hidden sm:inline">Fusión</span>
               </button>
 
-
+              <button
+                onClick={() => setMode('image-creator')}
+                className={`px-3 md:px-4 py-2 rounded-lg text-[11px] md:text-xs font-bold transition-all whitespace-nowrap ${mode === 'image-creator' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-100'}`}
+              >
+                <i className="fa-solid fa-paintbrush sm:hidden"></i>
+                <span className="hidden sm:inline">Creador Imágenes</span>
+              </button>
 
               <button onClick={() => setShowCoverGenerator(true)} className="px-3 md:px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-[11px] md:text-xs font-bold shadow-md hover:shadow-lg transition-all whitespace-nowrap flex items-center gap-2" title="Crear Portada IA">
                 <i className="fa-solid fa-wand-magic-sparkles"></i>
@@ -535,6 +543,8 @@ const App: React.FC = () => {
 
             {mode === 'merger' ? (
               <AudioMerger />
+            ) : mode === 'image-creator' ? (
+              <ImageCreatorTab />
             ) : mode === 'text' ? (
               <div className="bg-white dark:bg-slate-800 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4 transition-colors duration-300">
                 <input type="text" value={projectTitle} onChange={(e) => setProjectTitle(e.target.value)} placeholder="Título de la obra o capítulo..." className="w-full px-4 md:px-5 py-3 md:py-4 rounded-xl md:rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 outline-none font-bold text-sm md:text-base dark:text-white transition-colors" />
