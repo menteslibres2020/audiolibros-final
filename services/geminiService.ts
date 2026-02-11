@@ -185,36 +185,32 @@ ${chunk}`;
         let url = '';
         let body = {};
 
-        // Lógica ORIGINAL de Step 82 (v1beta + generateContent + responseModalities)
-        if (model.includes('gemini')) {
-          url = `/api/gemini/v1beta/models/${model}:generateContent`;
+        // CAMBIO ESTRATÉGICO TOTAL: Migración forzosa a endpoint :predict (Vertex Style)
+        // El usuario reporta que generateContent SOLO genera 1:1 sin importar el prompt.
+        // La única forma de garantizar 16:9 es usando parameters.aspectRatio en la API de predicción.
 
-          // PROMPT ENGINEERING AGRESIVO PARA FORMATO
-          // Al no soportar generationConfig.aspectRatio en esta versión, forzamos vía texto.
-          let ratioInstruction = "";
-          if (aspectRatio === '16:9') {
-            ratioInstruction = " --aspect-ratio 16:9";
-          } else if (aspectRatio === '9:16') {
-            ratioInstruction = " --aspect-ratio 9:16";
-          } else {
-            ratioInstruction = " --aspect-ratio 1:1";
+        // Usamos el endpoint predict para este modelo específico, confiando en que lo soporta (como Imagen)
+        url = `/api/gemini/v1beta/models/${model}:predict`;
+
+        // Mapeo estricto de parámetros
+        const arMap: Record<string, string> = {
+          '16:9': '16:9',
+          '9:16': '9:16',
+          '1:1': '1:1'
+        };
+        const targetAr = arMap[aspectRatio] || '16:9'; // Default a 16:9 si falla algo
+
+        body = {
+          instances: [
+            { prompt: prompt }
+          ],
+          parameters: {
+            sampleCount: 1,
+            aspectRatio: targetAr, // ESTO ES LO QUE EL USUARIO NECESITA: PARAMETRO REAL
+            safetySetting: "block_medium_and_above",
+            personGeneration: "allow_adult"
           }
-
-          // Colocamos la instrucción AL FINAL, que suele funcionar mejor para parámetros en Gemini
-          const finalPrompt = `${prompt} ${ratioInstruction}`;
-
-          body = {
-            contents: [{ parts: [{ text: finalPrompt }] }],
-            generationConfig: {
-              responseModalities: ["IMAGE"],
-              speechConfig: undefined,
-            }
-          };
-        } else {
-          // Fallback legacy (si se llegara a usar un modelo no-gemini)
-          url = `/api/gemini/v1beta/models/${model}:predict`;
-          body = { instances: [{ prompt: prompt }], parameters: { sampleCount: 1 } };
-        }
+        };
 
         console.log(`Intentando generar imagen con modelo ${model} en URL ${url}...`);
 
