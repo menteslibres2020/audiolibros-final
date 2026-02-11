@@ -168,32 +168,38 @@ ${chunk}`;
     const ai = this.getAIInstance();
 
     try {
-      console.log(`Generando imagen con ai.models.generateImages y modelo gemini-2.5-flash-image-preview. Ratio: ${aspectRatio}`);
+      console.log(`Generando imagen con modelo gemini-2.5-flash-image. Ratio: ${aspectRatio}`);
 
-      // Usamos el método ESPECÍFICO para generar imágenes del SDK nuevo
-      // Esto asegura que el parámetro aspectRatio se envíe en el lugar correcto ('GenerateImagesConfig')
-      const response = await ai.models.generateImages({
-        model: 'gemini-2.5-flash-image-preview',
-        prompt: prompt, // prompt es sibling de config en generateImages
+      // Inyectamos el ratio en el prompt como refuerzo, ya que la config a veces es ignorada por el modelo preview
+      const ratioInstruction = aspectRatio === '1:1' ? 'square aspect ratio' :
+        aspectRatio === '16:9' ? 'wide 16:9 aspect ratio' :
+          aspectRatio === '9:16' ? 'tall 9:16 aspect ratio' :
+            aspectRatio === '3:4' ? 'portrait 3:4 aspect ratio' :
+              aspectRatio === '4:3' ? 'landscape 4:3 aspect ratio' : '';
+
+      const finalPrompt = `${prompt} . Generate this image with ${ratioInstruction}.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image', // Volvemos al nombre base que funcionaba (produce imagen)
+        contents: {
+          parts: [{ text: finalPrompt }]
+        },
         config: {
-          aspectRatio: aspectRatio,
-          // numberOfImages: 1 (default)
+          // Intentamos pasar el config estándar
+          responseMimeType: 'image/jpeg',
         }
-      } as any); // cast as any por si las tipos del SDK local están desactualizados vs la librería real
+      } as any);
 
-      const imageBytes = response.generatedImages?.[0]?.image?.imageBytes;
+      const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
 
-      if (imageBytes) {
-        // El SDK suele devolver imageBytes en base64 raw.
-        // Intentamos deducir el mimeType o fallback a image/png
-        const mimeType = response.generatedImages?.[0]?.image?.mimeType || 'image/png';
-        return `data:${mimeType};base64,${imageBytes}`;
+      if (part?.inlineData) {
+        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
       }
 
-      throw new Error("La IA no devolvió 'imageBytes' ni datos válidos.");
+      throw new Error("La IA no devolvió datos de imagen válidos.");
 
     } catch (error: any) {
-      console.error("Error generando imagen (generateImages):", error);
+      console.error("Error generando imagen (generateContent):", error);
       throw new Error(`Fallo en generación de imagen: ${error.message}`);
     }
   }
