@@ -170,23 +170,28 @@ ${chunk}`;
     try {
       console.log(`Generando imagen con modelo gemini-2.5-flash-image. Ratio: ${aspectRatio}`);
 
-      // Inyectamos el ratio en el prompt como refuerzo, ya que la config a veces es ignorada por el modelo preview
-      const ratioInstruction = aspectRatio === '1:1' ? 'square aspect ratio' :
-        aspectRatio === '16:9' ? 'wide 16:9 aspect ratio' :
-          aspectRatio === '9:16' ? 'tall 9:16 aspect ratio' :
-            aspectRatio === '3:4' ? 'portrait 3:4 aspect ratio' :
-              aspectRatio === '4:3' ? 'landscape 4:3 aspect ratio' : '';
+      // Prompt Engineering para forzar el aspect ratio
+      // ya que generateContent ignora el config.aspectRatio en este modelo
+      const ratioMap: Record<string, string> = {
+        '1:1': 'square aspect ratio 1:1',
+        '16:9': 'wide landscape aspect ratio 16:9, cinematic view',
+        '9:16': 'tall portrait aspect ratio 9:16, full body view',
+        '3:4': 'vertical aspect ratio 3:4',
+        '4:3': 'landscape aspect ratio 4:3'
+      };
 
-      const finalPrompt = `${prompt} . Generate this image with ${ratioInstruction}.`;
+      const ratioDesc = ratioMap[aspectRatio] || 'square aspect ratio';
+      const finalPrompt = `${prompt} . (Image generation parameters: ${ratioDesc})`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image', // Volvemos al nombre base que funcionaba (produce imagen)
+        model: 'gemini-2.5-flash-image',
         contents: {
           parts: [{ text: finalPrompt }]
         },
+        // No pasamos config que cause errores de validación (mimeType)
+        // Pasamos el ratio por si acaso (aunque suele ignorarse)
         config: {
-          // Intentamos pasar el config estándar
-          responseMimeType: 'image/jpeg',
+          aspectRatio: aspectRatio
         }
       } as any);
 
@@ -199,7 +204,7 @@ ${chunk}`;
       throw new Error("La IA no devolvió datos de imagen válidos.");
 
     } catch (error: any) {
-      console.error("Error generando imagen (generateContent):", error);
+      console.error("Error generando imagen:", error);
       throw new Error(`Fallo en generación de imagen: ${error.message}`);
     }
   }
