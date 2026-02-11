@@ -170,27 +170,38 @@ ${chunk}`;
     try {
       console.log(`Generando imagen con modelo gemini-2.5-flash-image (vía generateContent). Ratio: ${aspectRatio}`);
 
-      // Prompt Engineering agresivo: Prefijo para intentar forzar el ratio
+      // Prompt Engineering: Instrucciones explícitas de formato
       const ratioMap: Record<string, string> = {
-        '1:1': 'Square 1:1 image',
-        '16:9': 'Wide 16:9 landscape image',
-        '9:16': 'Tall 9:16 portrait image',
-        '3:4': 'Vertical 3:4 image',
-        '4:3': 'Landscape 4:3 image'
+        '1:1': 'Square 1:1 format',
+        '16:9': 'Wide 16:9 landscape format',
+        '9:16': 'Tall 9:16 portrait format',
+        '3:4': 'Vertical 3:4 portrait format',
+        '4:3': 'Landscape 4:3 format'
       };
 
-      const ratioDesc = ratioMap[aspectRatio] || 'Square 1:1 image';
+      const ratioDesc = ratioMap[aspectRatio] || 'Square 1:1 format';
 
-      // Colocamos la instrucción AL PRINCIO para mayor peso
-      const finalPrompt = `[Format: ${ratioDesc}]. ${prompt}`;
+      // Colocamos el formato AL FINAL también, que suele tener más peso en algunos LLMs (recency bias)
+      const finalPrompt = `[Image Format: ${ratioDesc}]. ${prompt} --ar ${aspectRatio.replace(':', ':')}`;
+
+      // INVESTIGACIÓN: Intentamos pasar el parámetro de aspect ratio en generationConfig
+      // Aunque el SDK de Node no lo tipe, la API REST de Gemini a veces lo acepta en 'generationConfig' o 'imageGenerationConfig'
+      // Si falla con 400, el catch lo manejará (pero este modelo debería ser robusto).
+      const generationConfig: any = {
+        temperature: 0.4, // Menor temperatura para mayor fidelidad a la instrucción de formato
+      };
+
+      // Intento de inyección de parámetros no documentados pero posibles en la familia Flash
+      if (aspectRatio !== '1:1') {
+        generationConfig.aspectRatio = aspectRatio;
+      }
 
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents: {
           parts: [{ text: finalPrompt }]
         },
-        // OJO: No pasar config de aspect ratio aquí porque este modelo la ignora o da error en generateContent.
-        // Confiamos 100% en el prompt.
+        config: generationConfig
       } as any);
 
       const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
@@ -203,8 +214,26 @@ ${chunk}`;
 
     } catch (error: any) {
       console.error("Error generando imagen:", error);
+      // Fallback silencioso: Si falla por el config, reintentamos SIN config (solo prompt)
+      if (error.message.includes('400') || error.message.includes('Invalid argument')) {
+        console.warn("Fallo con config de aspect ratio, reintentando solo con prompt...");
+        return this.retryGenerateImagePromptOnly(prompt, aspectRatio);
+      }
       throw new Error(`Fallo en generación de imagen: ${error.message}`);
     }
+  }
+
+  // Método de respaldo puro sin config que pueda romper
+  private async retryGenerateImagePromptOnly(prompt: string, aspectRatio: string): Promise<string> {
+    const ai = this.getAIInstance();
+    const finalPrompt = `Create a ${aspectRatio} image. ${prompt}`;
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: [{ parts: [{ text: finalPrompt }] }]
+    });
+    const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+    if (part?.inlineData) return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+    throw new Error("Fallo en reintento de imagen.");
   }
 
   async generateImagePrompt(fragmentText: string, context: string): Promise<string> {

@@ -850,7 +850,7 @@ const App: React.FC = () => {
           </div>
         </main>
         <footer className="p-6 md:p-8 text-center text-slate-400 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] mt-auto">
-          PRODUCIDO CON GEMINI FLASH 2.5 • VOCES LIBRES • 2024
+          PRODUCIDO CON GEMINI FLASH 2.5 • VOCES LIBRES • 2026
         </footer>
       </div>
 
