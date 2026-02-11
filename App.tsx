@@ -17,6 +17,7 @@ import { Session } from '@supabase/supabase-js';
 import { cloudService } from './services/cloudService';
 import ResetPasswordModal from './components/ResetPasswordModal';
 import CoverGenerator from './components/CoverGenerator';
+import ImageCreator from './components/ImageCreator';
 
 const App: React.FC = () => {
   const [isReady, setIsReady] = useState(false);
@@ -36,7 +37,7 @@ const App: React.FC = () => {
   const [projectCharCount, setProjectCharCount] = useState(0);
   const [error, setError] = useState<{ message: string, isQuota?: boolean } | null>(null);
 
-  const [mode, setMode] = useState<'text' | 'epub' | 'merger' | 'music' | 'video'>('text');
+  const [mode, setMode] = useState<'text' | 'epub' | 'merger' | 'music' | 'video' | 'image-creator'>('text');
   const [bookTitle, setBookTitle] = useState('');
   const [bookAuthor, setBookAuthor] = useState('');
   const [chapters, setChapters] = useState<EpubChapter[]>([]);
@@ -498,6 +499,14 @@ const App: React.FC = () => {
                 <span className="hidden sm:inline">Portada IA</span>
               </button>
 
+              <button
+                onClick={() => setMode('image-creator')}
+                className={`px-3 md:px-4 py-2 rounded-lg text-[11px] md:text-xs font-bold transition-all whitespace-nowrap ${mode === 'image-creator' ? 'bg-pink-50 text-pink-600' : 'text-slate-500 hover:bg-slate-100'}`}
+              >
+                <i className="fa-solid fa-paintbrush sm:hidden"></i>
+                <span className="hidden sm:inline">Creador Imágenes</span>
+              </button>
+
               <button onClick={() => setShowStats(!showStats)} className={`w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-lg transition-colors shrink-0 ${showStats ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`} title="Panel de Monitor"><i className="fa-solid fa-chart-column text-xs md:text-base"></i></button>
               <button onClick={() => fileInputRef.current?.click()} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 shrink-0" title="Importar ePub"><i className="fa-solid fa-file-import text-xs md:text-base"></i></button>
               <input type="file" ref={fileInputRef} className="hidden" accept=".epub" onChange={handleEpubUpload} />
@@ -549,6 +558,8 @@ const App: React.FC = () => {
 
             {mode === 'merger' ? (
               <AudioMerger />
+            ) : mode === 'image-creator' ? (
+              <ImageCreator />
             ) : mode === 'text' ? (
               <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm space-y-4">
                 <input type="text" value={projectTitle} onChange={(e) => setProjectTitle(e.target.value)} placeholder="Título de la obra o capítulo..." className="w-full px-4 md:px-5 py-3 md:py-4 rounded-xl md:rounded-2xl bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none font-bold text-sm md:text-base" />
