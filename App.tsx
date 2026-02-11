@@ -727,31 +727,13 @@ const App: React.FC = () => {
                                       </div>
                                       <div className="flex gap-2">
                                         <button
-                                          onClick={() => handleGenerateImage(chapter.id, seg.id, '16:9')}
-                                          disabled={!!generatingImageId}
-                                          className="flex-1 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 rounded-lg text-[10px] font-bold transition-colors flex flex-col items-center gap-1"
-                                          title="Youtube / PC"
-                                        >
-                                          <div className="w-4 h-2.5 border border-current rounded-sm"></div>
-                                          16:9
-                                        </button>
-                                        <button
                                           onClick={() => handleGenerateImage(chapter.id, seg.id, '1:1')}
                                           disabled={!!generatingImageId}
-                                          className="flex-1 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 rounded-lg text-[10px] font-bold transition-colors flex flex-col items-center gap-1"
-                                          title="Instagram / Cuadrado"
+                                          className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 rounded-lg text-[10px] font-bold transition-colors flex items-center justify-center gap-2"
+                                          title="Generar Imagen"
                                         >
-                                          <div className="w-3 h-3 border border-current rounded-sm"></div>
-                                          1:1
-                                        </button>
-                                        <button
-                                          onClick={() => handleGenerateImage(chapter.id, seg.id, '9:16')}
-                                          disabled={!!generatingImageId}
-                                          className="flex-1 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 rounded-lg text-[10px] font-bold transition-colors flex flex-col items-center gap-1"
-                                          title="TikTok / Reels"
-                                        >
-                                          <div className="w-2.5 h-4 border border-current rounded-sm"></div>
-                                          9:16
+                                          <i className="fa-solid fa-paintbrush"></i>
+                                          GENERAR ILUSTRACIÓN
                                         </button>
                                       </div>
                                     </div>
