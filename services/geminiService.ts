@@ -164,7 +164,7 @@ ${chunk}`;
     return URL.createObjectURL(wavBlob);
   }
 
-  async generateImage(prompt: string, aspectRatio: '1:1' | '16:9' | '9:16' = '1:1'): Promise<string> {
+  async generateImage(prompt: string, aspectRatio: '1:1' | '16:9' | '9:16' | '4:5' | '3:2' = '1:1'): Promise<string> {
     const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
@@ -202,6 +202,12 @@ ${chunk}`;
         } else if (aspectRatio === '9:16') {
           arPrefix = "Tall 9:16 vertical aspect ratio image of";
           arSuffix = " --ar 9:16";
+        } else if (aspectRatio === '4:5') {
+          arPrefix = "Portrait 4:5 aspect ratio image of";
+          arSuffix = " --ar 4:5";
+        } else if (aspectRatio === '3:2') {
+          arPrefix = "Classic 3:2 aspect ratio landscape image of";
+          arSuffix = " --ar 3:2";
         } else {
           arPrefix = "Square 1:1 image of";
           arSuffix = " --ar 1:1";
@@ -403,3 +409,5 @@ ${chunk}`;
 }
 
 export const ttsService = new GeminiTTSService();
+
+export const geminiService = ttsService;
