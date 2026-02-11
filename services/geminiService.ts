@@ -167,44 +167,52 @@ ${chunk}`;
   async generateImage(prompt: string, aspectRatio: '1:1' | '16:9' | '9:16' | '3:4' | '4:3' = '1:1'): Promise<string> {
     const ai = this.getAIInstance();
 
-    try {
-      console.log(`Generando imagen con modelo gemini-2.5-flash-image. Ratio: ${aspectRatio}`);
+    // 1. Configuración de imagen
+    const imageConfig = {
+      aspectRatio: aspectRatio,
+      numberOfImages: 1,
+    };
 
-      // Prompt Engineering para forzar el aspect ratio
-      // ya que generateContent ignora el config.aspectRatio en este modelo
-      const ratioMap: Record<string, string> = {
-        '1:1': 'square aspect ratio 1:1',
-        '16:9': 'wide landscape aspect ratio 16:9, cinematic view',
-        '9:16': 'tall portrait aspect ratio 9:16, full body view',
-        '3:4': 'vertical aspect ratio 3:4',
-        '4:3': 'landscape aspect ratio 4:3'
-      };
-
-      const ratioDesc = ratioMap[aspectRatio] || 'square aspect ratio';
-      const finalPrompt = `${prompt} . (Image generation parameters: ${ratioDesc})`;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: {
-          parts: [{ text: finalPrompt }]
-        },
-        // No pasamos config que cause errores de validación (mimeType)
-        // Pasamos el ratio por si acaso (aunque suele ignorarse)
-        config: {
-          aspectRatio: aspectRatio
-        }
+    // 2. Función helper para probar modelos en cascada
+    const tryGenerate = async (modelName: string) => {
+      console.log(`[ImageGen] Probando generateImages con modelo: ${modelName} | Ratio: ${aspectRatio}`);
+      return await ai.models.generateImages({
+        model: modelName,
+        prompt: prompt,
+        config: imageConfig
       } as any);
+    };
 
-      const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+    try {
+      let response;
 
-      if (part?.inlineData) {
-        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+      // 3. Estrategia de Fallback:
+      // Intentamos primero el modelo solicitado por el usuario (Gemini 2.5)
+      // Si falla (404/Error), caemos a Gemini 2.0 Flash que es estable para formatos
+      try {
+        response = await tryGenerate('gemini-2.5-flash-image-preview');
+      } catch (err: any) {
+        console.warn(`[ImageGen] Fallo Gemini 2.5 Preview (${err.message}). Reintentando con Gemini 2.5 Stable...`);
+        try {
+          response = await tryGenerate('gemini-2.5-flash-image');
+        } catch (err2: any) {
+          console.warn(`[ImageGen] Fallo Gemini 2.5 Stable (${err2.message}). Usando FALLBACK a Gemini 2.0 Flash.`);
+          response = await tryGenerate('gemini-2.0-flash');
+        }
       }
 
-      throw new Error("La IA no devolvió datos de imagen válidos.");
+      // 4. Extracción de imagen
+      const imageBytes = response?.generatedImages?.[0]?.image?.imageBytes;
+
+      if (imageBytes) {
+        const mimeType = response.generatedImages?.[0]?.image?.mimeType || 'image/png';
+        return `data:${mimeType};base64,${imageBytes}`;
+      }
+
+      throw new Error("La IA no devolvió 'imageBytes' ni datos válidos.");
 
     } catch (error: any) {
-      console.error("Error generando imagen:", error);
+      console.error("Error FATAL generando imagen (todos los intentos fallaron):", error);
       throw new Error(`Fallo en generación de imagen: ${error.message}`);
     }
   }
