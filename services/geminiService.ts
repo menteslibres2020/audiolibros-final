@@ -176,12 +176,11 @@ ${chunk}`;
           { parts: [{ text: prompt }] }
         ],
         config: {
-          responseModalities: [Modality.IMAGE],
           // @ts-ignore
           imageConfig: {
             aspectRatio: aspectRatio,
           }
-        }
+        } as any
       });
 
       const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
