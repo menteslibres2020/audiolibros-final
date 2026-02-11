@@ -124,9 +124,8 @@ ${chunk}`;
       const fetchChunk = async (retryCount = 0): Promise<string> => {
         try {
           const response = await ai.models.generateContent({
-            // Cambiamos a 2.0 Flash Experimental que es más estable para audio hoy
-            // El 2.5 Preview TTS está dando error 500 Internal
-            model: "gemini-2.0-flash",
+            // Volvemos al modelo SOLICITADO por el usuario
+            model: "gemini-2.5-flash-preview-tts",
             contents: [{ parts: [{ text: prompt }] }],
             config: {
               responseModalities: [Modality.AUDIO],
