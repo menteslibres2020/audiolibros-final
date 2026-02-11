@@ -185,30 +185,35 @@ ${chunk}`;
         let url = '';
         let body = {};
 
-        // CAMBIO ESTRATÉGICO TOTAL: Migración forzosa a endpoint :predict (Vertex Style)
-        // El usuario reporta que generateContent SOLO genera 1:1 sin importar el prompt.
-        // La única forma de garantizar 16:9 es usando parameters.aspectRatio en la API de predicción.
+        // VOLVIENDO AL FORMATO QUE FUNCIONA (generateContent) PERO CON PROMPT ENGINEERING AGRESIVO
+        // El endpoint :predict dio 404. El usuario quiere sí o sí 16:9.
 
-        // Usamos el endpoint predict para este modelo específico, confiando en que lo soporta (como Imagen)
-        url = `/api/gemini/v1beta/models/${model}:predict`;
+        // 1. Endpoint y Modelo Standard
+        url = `/api/gemini/v1beta/models/${model}:generateContent`;
 
-        // Mapeo estricto de parámetros
-        const arMap: Record<string, string> = {
-          '16:9': '16:9',
-          '9:16': '9:16',
-          '1:1': '1:1'
-        };
-        const targetAr = arMap[aspectRatio] || '16:9'; // Default a 16:9 si falla algo
+        // 2. Prompt Engineering Ultra-Específico (Prefix + Suffix)
+        let arPrefix = "";
+        let arSuffix = "";
+
+        if (aspectRatio === '16:9') {
+          arPrefix = "Wide cinematic 16:9 aspect ratio image of";
+          arSuffix = " --ar 16:9";
+        } else if (aspectRatio === '9:16') {
+          arPrefix = "Tall 9:16 vertical aspect ratio image of";
+          arSuffix = " --ar 9:16";
+        } else {
+          arPrefix = "Square 1:1 image of";
+          arSuffix = " --ar 1:1";
+        }
+
+        // Prompt final: "Wide cinematic 16:9 aspect ratio image of [PROMPT] --ar 16:9"
+        // Esta estructura "sandwich" suele ser la más efectiva para forzar al modelo.
+        const finalPrompt = `${arPrefix} ${prompt} ${arSuffix}`;
 
         body = {
-          instances: [
-            { prompt: prompt }
-          ],
-          parameters: {
-            sampleCount: 1,
-            aspectRatio: targetAr, // ESTO ES LO QUE EL USUARIO NECESITA: PARAMETRO REAL
-            safetySetting: "block_medium_and_above",
-            personGeneration: "allow_adult"
+          contents: [{ parts: [{ text: finalPrompt }] }],
+          generationConfig: {
+            responseModalities: ["IMAGE"],
           }
         };
 
