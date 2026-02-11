@@ -164,7 +164,7 @@ ${chunk}`;
     return URL.createObjectURL(wavBlob);
   }
 
-  async generateImage(prompt: string, aspectRatio: '1:1' | '16:9' | '9:16' | '4:5' | '3:2' = '1:1'): Promise<string> {
+  async generateImage(prompt: string, aspectRatio: '1:1' | '16:9' | '9:16' | '3:4' = '1:1'): Promise<string> {
     const ai = this.getAIInstance();
 
     try {
