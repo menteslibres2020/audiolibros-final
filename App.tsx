@@ -51,6 +51,24 @@ const App: React.FC = () => {
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [showCoverGenerator, setShowCoverGenerator] = useState(false);
 
+  // Dark Mode Logic
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [darkMode]);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -442,7 +460,7 @@ const App: React.FC = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-300">
         {/* Overlay global de narración activa */}
         {loading && processingId === 'manual' && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex flex-col items-center justify-center text-white gap-6 p-6">
@@ -464,14 +482,14 @@ const App: React.FC = () => {
           </div>
         )}
 
-        <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 sticky top-0 z-50 shadow-sm">
+        <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-6 py-4 sticky top-0 z-50 shadow-sm transition-colors duration-300">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 md:gap-3">
               <div className="w-9 h-9 md:w-10 md:h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shrink-0">
                 <i className="fa-solid fa-microphone-lines text-sm md:text-base"></i>
               </div>
               <div className="hidden xs:block">
-                <h1 className="text-sm md:text-lg font-bold leading-none">Libroteca</h1>
+                <h1 className="text-sm md:text-lg font-bold leading-none text-slate-900 dark:text-white">Libroteca</h1>
                 <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Estudio</p>
               </div>
             </div>
@@ -511,7 +529,10 @@ const App: React.FC = () => {
               <button onClick={() => fileInputRef.current?.click()} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 shrink-0" title="Importar ePub"><i className="fa-solid fa-file-import text-xs md:text-base"></i></button>
               <input type="file" ref={fileInputRef} className="hidden" accept=".epub" onChange={handleEpubUpload} />
               <button onClick={clearSession} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-lg bg-slate-100 text-slate-400 hover:text-red-600 shrink-0" title="Limpiar todo"><i className="fa-solid fa-trash-can text-xs md:text-base"></i></button>
-              <div className="w-px h-6 bg-slate-200 mx-1 md:mx-2 shrink-0"></div>
+              <button onClick={() => setDarkMode(!darkMode)} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-indigo-400 hover:bg-slate-200 dark:hover:bg-slate-700 shrink-0 transition-colors" title={darkMode ? "Modo Claro" : "Modo Oscuro"}>
+                <i className={`fa-solid ${darkMode ? 'fa-sun' : 'fa-moon'} text-xs md:text-base`}></i>
+              </button>
+              <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 md:mx-2 shrink-0"></div>
               <button onClick={() => setShowAccountModal(true)} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 shrink-0" title="Mi Cuenta"><i className="fa-solid fa-user-gear text-xs md:text-base"></i></button>
             </div>
           </div>
@@ -520,7 +541,7 @@ const App: React.FC = () => {
         <main className="max-w-7xl mx-auto w-full p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
           <div className="lg:col-span-8 space-y-6">
             {showStats && stats.totalChars > 0 && (
-              <div className="bg-slate-900 text-white rounded-2xl md:rounded-3xl p-5 md:p-6 shadow-xl animate-in slide-in-from-top duration-300">
+              <div className="bg-slate-900 dark:bg-slate-800 text-white rounded-2xl md:rounded-3xl p-5 md:p-6 shadow-xl animate-in slide-in-from-top duration-300 border border-transparent dark:border-slate-700">
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
                   <div>
                     <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400">Volumen Narrativo</p>
@@ -561,9 +582,9 @@ const App: React.FC = () => {
             ) : mode === 'image-creator' ? (
               <ImageCreator />
             ) : mode === 'text' ? (
-              <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                <input type="text" value={projectTitle} onChange={(e) => setProjectTitle(e.target.value)} placeholder="Título de la obra o capítulo..." className="w-full px-4 md:px-5 py-3 md:py-4 rounded-xl md:rounded-2xl bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none font-bold text-sm md:text-base" />
-                <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Pega aquí el texto que deseas narrar..." className="w-full h-64 md:h-80 p-4 md:p-6 rounded-xl md:rounded-2xl bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none font-medium resize-none custom-scrollbar text-sm md:text-base" />
+              <div className="bg-white dark:bg-slate-800 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4 transition-colors duration-300">
+                <input type="text" value={projectTitle} onChange={(e) => setProjectTitle(e.target.value)} placeholder="Título de la obra o capítulo..." className="w-full px-4 md:px-5 py-3 md:py-4 rounded-xl md:rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 outline-none font-bold text-sm md:text-base dark:text-white transition-colors" />
+                <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Pega aquí el texto que deseas narrar..." className="w-full h-64 md:h-80 p-4 md:p-6 rounded-xl md:rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 outline-none font-medium resize-none custom-scrollbar text-sm md:text-base dark:text-slate-300 transition-colors" />
                 <button
                   onClick={() => processSegment('manual', 'manual')}
                   disabled={loading || !text}
@@ -584,11 +605,11 @@ const App: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="bg-white p-5 md:p-8 rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm flex flex-col gap-4">
+                    <div className="bg-white dark:bg-slate-800 p-5 md:p-8 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-4 transition-colors">
                       <div className="flex items-center gap-4 md:gap-6">
                         <div className="w-12 h-16 md:w-16 md:h-20 bg-indigo-600 rounded-lg shadow-md flex items-center justify-center text-white text-xl md:text-2xl shrink-0"><i className="fa-solid fa-book"></i></div>
                         <div className="min-w-0">
-                          <h2 className="text-xl md:text-2xl font-black text-slate-900 leading-tight truncate">{bookTitle}</h2>
+                          <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white leading-tight truncate">{bookTitle}</h2>
                           <p className="text-xs md:text-sm font-bold text-indigo-600 uppercase tracking-widest mt-1 truncate">{bookAuthor}</p>
                         </div>
                       </div>
@@ -599,14 +620,14 @@ const App: React.FC = () => {
                     </div>
 
                     {chapters.map((chapter) => (
-                      <div key={chapter.id} className="bg-white rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm overflow-hidden transition-all">
+                      <div key={chapter.id} className="bg-white dark:bg-slate-800 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition-all">
                         <div className="flex items-center">
-                          <button onClick={() => setExpandedChapter(expandedChapter === chapter.id ? null : chapter.id)} className="flex-1 flex items-center justify-between p-4 md:p-5 hover:bg-slate-50 text-left min-w-0">
+                          <button onClick={() => setExpandedChapter(expandedChapter === chapter.id ? null : chapter.id)} className="flex-1 flex items-center justify-between p-4 md:p-5 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-left min-w-0">
                             <div className="flex items-center gap-3 md:gap-4 min-w-0">
                               <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center shrink-0 ${expandedChapter === chapter.id ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-400'}`}>
                                 <i className="fa-solid fa-list-ol text-xs md:text-base"></i>
                               </div>
-                              <h3 className="font-bold text-xs md:text-sm text-slate-800 truncate">{chapter.title}</h3>
+                              <h3 className="font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 truncate">{chapter.title}</h3>
                             </div>
                             <i className={`fa-solid fa-chevron-right text-[10px] md:text-xs transition-transform shrink-0 ml-2 ${expandedChapter === chapter.id ? 'rotate-90 text-indigo-600' : 'text-slate-200'}`}></i>
                           </button>
@@ -633,9 +654,9 @@ const App: React.FC = () => {
                         </div>
 
                         {expandedChapter === chapter.id && (
-                          <div className="p-4 md:p-6 pt-0 border-t border-slate-100 space-y-4 md:space-y-6 bg-white">
+                          <div className="p-4 md:p-6 pt-0 border-t border-slate-100 dark:border-slate-700 space-y-4 md:space-y-6 bg-white dark:bg-slate-800">
                             {chapter.segments?.map((seg, sIdx) => (
-                              <div key={seg.id} className={`bg-slate-50 p-4 md:p-5 rounded-xl md:rounded-2xl border transition-all ${processingId === seg.id ? 'border-indigo-500 ring-2 ring-indigo-100 bg-indigo-50/30' : 'border-slate-200 hover:border-indigo-200'}`}>
+                              <div key={seg.id} className={`bg-slate-50 dark:bg-slate-900/50 p-4 md:p-5 rounded-xl md:rounded-2xl border transition-all ${processingId === seg.id ? 'border-indigo-500 ring-2 ring-indigo-100 bg-indigo-50/30' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-200'}`}>
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                                   <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                                     FRAGMENTO {sIdx + 1} <span className="text-slate-300 mx-1">|</span> {seg.content.length.toLocaleString()} CARACT.
@@ -762,11 +783,11 @@ const App: React.FC = () => {
               </div>
             )}
 
-            <section className="bg-white p-5 md:p-8 rounded-[32px] md:rounded-[40px] border border-slate-200 shadow-sm space-y-6 md:space-y-8">
+            <section className="bg-white dark:bg-slate-800 p-5 md:p-8 rounded-[32px] md:rounded-[40px] border border-slate-200 dark:border-slate-700 shadow-sm space-y-6 md:space-y-8 transition-colors">
               <div className="flex items-start gap-3 md:gap-4">
                 <div className="w-8 h-8 md:w-9 md:h-9 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center text-sm shrink-0"><i className="fa-solid fa-headset"></i></div>
                 <div>
-                  <h3 className="text-sm md:text-base font-black text-slate-900 leading-tight">Elenco de Narración Gratuito</h3>
+                  <h3 className="text-sm md:text-base font-black text-slate-900 dark:text-white leading-tight">Elenco de Narración Gratuito</h3>
                   <p className="text-[10px] md:text-xs text-slate-400 font-medium mt-1">Selecciona la voz ideal para tu proyecto.</p>
                 </div>
               </div>
@@ -795,9 +816,9 @@ const App: React.FC = () => {
 
           <div className="lg:col-span-4">
             <aside className="lg:sticky lg:top-24 space-y-6 flex flex-col h-auto lg:h-[calc(100vh-120px)]">
-              <div className="bg-white p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
+              <div className="bg-white dark:bg-slate-800 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col h-full overflow-hidden transition-colors">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xs md:text-sm font-black text-slate-900 uppercase tracking-widest">Producciones</h3>
+                  <h3 className="text-xs md:text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Producciones</h3>
                   <span className="bg-indigo-600 text-white px-2 py-0.5 md:px-2.5 md:py-1 rounded-lg text-[9px] md:text-[10px] font-bold shadow-sm">{history.length}</span>
                 </div>
 
@@ -833,10 +854,10 @@ const App: React.FC = () => {
 
       {showAccountModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowAccountModal(false)}>
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-black text-slate-900">Mi Cuenta</h3>
-              <button onClick={() => setShowAccountModal(false)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center transition-colors">
+              <h3 className="text-xl font-black text-slate-900 dark:text-white">Mi Cuenta</h3>
+              <button onClick={() => setShowAccountModal(false)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center transition-colors">
                 <i className="fa-solid fa-xmark"></i>
               </button>
             </div>
@@ -846,7 +867,7 @@ const App: React.FC = () => {
                 <i className="fa-solid fa-user"></i>
               </div>
               <div>
-                <p className="font-bold text-slate-900 truncate px-4" title={session?.user?.email}>{session?.user?.email}</p>
+                <p className="font-bold text-slate-900 dark:text-white truncate px-4" title={session?.user?.email}>{session?.user?.email}</p>
               </div>
             </div>
 
@@ -857,7 +878,7 @@ const App: React.FC = () => {
                   supabase.auth.signOut();
                   // window.location.reload(); // signOut usually triggers session change
                 }}
-                className="w-full py-3 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3 bg-slate-100 dark:bg-slate-700 hover:bg-red-50 dark:hover:bg-red-900/30 text-slate-600 dark:text-slate-300 hover:text-red-600 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
               >
                 <i className="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
               </button>
