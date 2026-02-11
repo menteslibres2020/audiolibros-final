@@ -6,7 +6,7 @@ import { persistenceService } from './services/persistenceService.ts';
 import VoiceSelector from './components/VoiceSelector.tsx';
 import HistoryItem from './components/HistoryItem.tsx';
 import AudioMerger from './components/AudioMerger.tsx';
-import ImageCreator from './components/ImageCreator.tsx';
+
 
 import { VOICES, EMOTIONS } from './constants.ts';
 import { NarrationResult } from './types.ts';
@@ -36,7 +36,7 @@ const App: React.FC = () => {
   const [projectCharCount, setProjectCharCount] = useState(0);
   const [error, setError] = useState<{ message: string, isQuota?: boolean } | null>(null);
 
-  const [mode, setMode] = useState<'text' | 'epub' | 'merger' | 'music' | 'video' | 'image-creator'>('text');
+  const [mode, setMode] = useState<'text' | 'epub' | 'merger' | 'music' | 'video'>('text');
   const [bookTitle, setBookTitle] = useState('');
   const [bookAuthor, setBookAuthor] = useState('');
   const [chapters, setChapters] = useState<EpubChapter[]>([]);
@@ -490,13 +490,7 @@ const App: React.FC = () => {
                 <i className="fa-solid fa-layer-group sm:hidden"></i>
                 <span className="hidden sm:inline">Fusión</span>
               </button>
-              <button
-                onClick={() => setMode('image-creator')}
-                className={`px-3 md:px-4 py-2 rounded-lg text-[11px] md:text-xs font-bold transition-all whitespace-nowrap ${mode === 'image-creator' ? 'bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200' : 'text-slate-500 hover:bg-slate-100'}`}
-              >
-                <i className="fa-solid fa-paintbrush sm:hidden"></i>
-                <span className="hidden sm:inline">Creador IA</span>
-              </button>
+
 
 
               <button onClick={() => setShowCoverGenerator(true)} className="px-3 md:px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-[11px] md:text-xs font-bold shadow-md hover:shadow-lg transition-all whitespace-nowrap flex items-center gap-2" title="Crear Portada IA">
@@ -553,9 +547,7 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {mode === 'image-creator' ? (
-              <ImageCreator />
-            ) : mode === 'merger' ? (
+            {mode === 'merger' ? (
               <AudioMerger />
             ) : mode === 'text' ? (
               <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm space-y-4">
