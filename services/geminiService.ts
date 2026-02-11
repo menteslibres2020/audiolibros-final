@@ -172,16 +172,15 @@ ${chunk}`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
-        contents: [
-          { parts: [{ text: prompt }] }
-        ],
+        contents: {
+          parts: [{ text: prompt }]
+        },
         config: {
-          // @ts-ignore
           imageConfig: {
             aspectRatio: aspectRatio,
           }
-        } as any
-      });
+        }
+      } as any);
 
       const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
 
