@@ -54,7 +54,9 @@ const App: React.FC = () => {
   // Dark Mode Logic
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      // Prioridad ABSOLUTA al blanco (Light Mode) por defecto, salvo que el usuario lo haya cambiado explícitamente.
+      // Ignoramos la preferencia del sistema para cumplir "el principal debe ser el de siempre blanco".
+      return localStorage.getItem('theme') === 'dark';
     }
     return false;
   });
