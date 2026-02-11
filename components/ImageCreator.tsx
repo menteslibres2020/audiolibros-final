@@ -11,7 +11,7 @@ type GeneratedImage = {
 
 const ImageCreator: React.FC = () => {
     const [prompt, setPrompt] = useState('');
-    const [aspectRatio, setAspectRatio] = useState<'1:1' | '16:9' | '9:16' | '4:5'>('1:1');
+    const [aspectRatio, setAspectRatio] = useState<'1:1' | '16:9' | '9:16' | '3:4'>('1:1');
     const [loading, setLoading] = useState(false);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -119,7 +119,7 @@ const ImageCreator: React.FC = () => {
                                     { id: '1:1', label: 'Cuadrado', icon: 'fa-square' },
                                     { id: '16:9', label: 'Cine', icon: 'fa-tv' },
                                     { id: '9:16', label: 'Móvil', icon: 'fa-mobile-screen' },
-                                    { id: '4:5', label: 'Social', icon: 'fa-image' },
+                                    { id: '3:4', label: 'Social', icon: 'fa-image' },
                                 ].map((format) => (
                                     <button
                                         key={format.id}
