@@ -22,6 +22,10 @@ import CoverGenerator from './components/CoverGenerator';
 
 
 const App: React.FC = () => {
+  useEffect(() => {
+    console.log("Versión desplegada: " + new Date().toISOString());
+  }, []);
+
   const [isReady, setIsReady] = useState(false);
   const [text, setText] = useState('');
   const [projectTitle, setProjectTitle] = useState('');
