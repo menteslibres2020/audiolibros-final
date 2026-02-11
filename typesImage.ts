@@ -1,17 +1,24 @@
 
-export type AspectRatio = '1:1' | '4:3' | '16:9' | '9:16';
+export type AspectRatio = '1:1' | '16:9' | '9:16' | '4:3';
 
-export type VisualStyle = 'Cinematic' | 'Abstract Art' | 'Oil Painting' | 'Minimalist' | 'Fantasy' | 'Dark Noir';
+export type VisualStyle =
+    | 'Cinematic'
+    | 'Photorealistic'
+    | 'Anime'
+    | 'Oil Painting'
+    | 'Cyberpunk'
+    | 'Watercolor'
+    | 'Sketch'
+    | '3D Render'
+    | 'Retro';
 
 export interface GeneratedImage {
     id: string;
     url: string;
     prompt: string;
-    title: string;
-    subtitle: string;
     aspectRatio: AspectRatio;
     visualStyle: VisualStyle;
-    timestamp: number;
+    createdAt: Date;
 }
 
 export interface GenerationState {

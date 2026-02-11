@@ -16,70 +16,69 @@ export class ImageGeminiService {
 
   public async generateImage(prompt: string, aspectRatio: AspectRatio, visualStyle: VisualStyle): Promise<string> {
 
-    // Ensure API Key is present
-    if (!process.env.API_KEY) {
-      throw new Error("API KEY no encontrada. Verifica tu configuración.");
+    // Use Vite environment variable
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+    if (!apiKey || apiKey.includes("PLACEHOLDER")) {
+      throw new Error("API KEY no encontrada. Verifica tu archivo .env.local y asegúrate de tener VITE_GEMINI_API_KEY.");
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
 
-    // Validar que el aspectRatio sea uno de los permitidos explícitamente por el SDK
+    // Valid aspect ratios for Imagen 3 model
     const validRatios: AspectRatio[] = ['1:1', '4:3', '16:9', '9:16'];
     const finalRatio = validRatios.includes(aspectRatio) ? aspectRatio : '1:1';
 
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: {
-          parts: [
-            {
-              text: `TASK: Professional aesthetic artistic visual for a book cover.
-              SUBJECT: ${prompt}. 
-              ARTISTIC STYLE: ${visualStyle}.
-              
-              STRICT NEGATIVE PROMPT:
-              - NO TEXT, NO LETTERS, NO NUMBERS, NO SYMBOLS, NO WORDS.
-              - NO WATERMARKS, NO LOGOS, NO SIGNATURES.
-              - NO TYPOGRAPHY, NO FONTS.
-              
-              STRICT POSITIVE PROMPT:
-              - Clean pictorial composition.
-              - 100% Artistic representation only.
-              - High definition, masterpiece quality.
-              - Style should strictly be ${visualStyle}.`,
-            },
-          ],
-        },
+        model: 'gemini-2.5-flash-image', // or 'imagen-3.0-generate-001' if supported by your plan
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                text: `TASK: Create a high-quality professional book cover visual.
+                  SUBJECT: ${prompt}
+                  STYLE: ${visualStyle}
+                  
+                  REQUIREMENTS:
+                  - NO TEXT, NO LETTERS.
+                  - High detail.
+                  - Artistic composition.`
+              }
+            ]
+          }
+        ],
         config: {
-          imageConfig: {
+          imageGenerationConfig: {
             aspectRatio: finalRatio,
+            numberOfImages: 1,
           },
         },
-      });
+      } as any); // Type assertion if SDK types are slightly behind API
 
+      // Check different response structures depending on SDK version
       const candidate = response.candidates?.[0];
-      if (!candidate?.content?.parts) {
-        throw new Error("La IA no devolvió ninguna imagen. Intenta con otro prompt.");
+      const parts = candidate?.content?.parts;
+
+      if (!parts || parts.length === 0) {
+        throw new Error("La IA no devolvió contenido.");
       }
 
-      for (const part of candidate.content.parts) {
-        if (part.inlineData) {
-          const base64EncodeString = part.inlineData.data;
-          // Verificar que el string no esté vacío
-          if (!base64EncodeString || base64EncodeString.length < 100) {
-            throw new Error("La imagen recibida es corrupta o está vacía.");
-          }
-          return `data:image/png;base64,${base64EncodeString}`;
+      for (const part of parts) {
+        if (part.inlineData && part.inlineData.data) {
+          return `data:image/png;base64,${part.inlineData.data}`;
         }
       }
 
-      throw new Error("No se pudo extraer la imagen de la respuesta de la IA.");
+      throw new Error("No se encontró imagen en la respuesta.");
+
     } catch (error: any) {
       console.error("Gemini Image Generation Error:", error);
-      if (error.message?.includes("safety")) {
-        throw new Error("El contenido fue bloqueado por filtros de seguridad. Prueba con un concepto distinto.");
+      if (error.message?.includes("API_KEY")) {
+        throw new Error("Clave API inválida o no configurada.");
       }
-      throw new Error(error.message || "Error al conectar con el servidor de arte.");
+      throw new Error(error.message || "Error generando la imagen.");
     }
   }
 }
