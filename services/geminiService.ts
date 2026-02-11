@@ -168,10 +168,10 @@ ${chunk}`;
     const ai = this.getAIInstance();
 
     try {
-      console.log(`Generando imagen con modelo gemini-2.0-flash. Ratio: ${aspectRatio}`);
+      console.log(`Generando imagen con modelo gemini-2.5-flash-image-preview. Ratio: ${aspectRatio}`);
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash-image-preview',
         contents: {
           parts: [{ text: prompt }]
         },
