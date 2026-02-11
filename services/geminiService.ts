@@ -126,7 +126,7 @@ ${chunk}`;
           const response = await ai.models.generateContent({
             // Cambiamos a 2.0 Flash Experimental que es más estable para audio hoy
             // El 2.5 Preview TTS está dando error 500 Internal
-            model: "gemini-2.0-flash-exp",
+            model: "gemini-2.0-flash",
             contents: [{ parts: [{ text: prompt }] }],
             config: {
               responseModalities: [Modality.AUDIO],
