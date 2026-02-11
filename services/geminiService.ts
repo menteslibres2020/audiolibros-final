@@ -188,7 +188,8 @@ ${chunk}`;
 
       // 3. Estrategia de Fallback:
       // Intentamos primero el modelo solicitado por el usuario (Gemini 2.5)
-      // Si falla (404/Error), caemos a Gemini 2.0 Flash que es estable para formatos
+      // Si falla, probamos Gemini 2.0 Flash.
+      // Si falla, recurrimos al modelo nativo de imagen (Imagen 3) que soporta aspect ratio nativo.
       try {
         response = await tryGenerate('gemini-2.5-flash-image-preview');
       } catch (err: any) {
@@ -196,8 +197,14 @@ ${chunk}`;
         try {
           response = await tryGenerate('gemini-2.5-flash-image');
         } catch (err2: any) {
-          console.warn(`[ImageGen] Fallo Gemini 2.5 Stable (${err2.message}). Usando FALLBACK a Gemini 2.0 Flash.`);
-          response = await tryGenerate('gemini-2.0-flash');
+          console.warn(`[ImageGen] Fallo Gemini 2.5 Stable (${err2.message}). Intentando Gemini 2.0 Flash...`);
+          try {
+            response = await tryGenerate('gemini-2.0-flash');
+          } catch (err3: any) {
+            console.warn(`[ImageGen] Fallo Gemini 2.0 Flash (${err3.message}). Usando ESTÁNDAR DE INDUSTRIA: Imagen 3.`);
+            // Este es el modelo nativo de imagen de Google, el más robusto para generateImages
+            response = await tryGenerate('imagen-3.0-generate-001');
+          }
         }
       }
 
