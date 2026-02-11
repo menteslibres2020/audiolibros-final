@@ -15,7 +15,13 @@ export class ImageGeminiService {
   }
 
   public async generateImage(prompt: string, aspectRatio: AspectRatio, visualStyle: VisualStyle): Promise<string> {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+
+    // Ensure API Key is present
+    if (!process.env.API_KEY) {
+      throw new Error("API KEY no encontrada. Verifica tu configuración.");
+    }
+
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     // Validar que el aspectRatio sea uno de los permitidos explícitamente por el SDK
     const validRatios: AspectRatio[] = ['1:1', '4:3', '16:9', '9:16'];
