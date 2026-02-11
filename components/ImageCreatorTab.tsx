@@ -7,7 +7,7 @@ import AspectRatioPicker from './AspectRatioPicker';
 import VisualStylePicker from './VisualStylePicker';
 import { ImageResult } from './ImageResult';
 
-export const ImageCreatorTab: React.FC = () => {
+const ImageCreatorTab: React.FC = () => {
     const [prompt, setPrompt] = useState('');
     const [selectedRatio, setSelectedRatio] = useState<AspectRatio>('1:1');
     const [selectedStyle, setSelectedStyle] = useState<VisualStyle>('Cinematic');
@@ -190,8 +190,8 @@ export const ImageCreatorTab: React.FC = () => {
                                         key={img.id}
                                         onClick={() => setState(prev => ({ ...prev, currentImage: img }))}
                                         className={`aspect-square rounded-xl overflow-hidden border-2 transition-all ${state.currentImage?.id === img.id
-                                                ? 'border-indigo-600 ring-2 ring-indigo-100 dark:ring-indigo-900'
-                                                : 'border-transparent hover:border-indigo-300'
+                                            ? 'border-indigo-600 ring-2 ring-indigo-100 dark:ring-indigo-900'
+                                            : 'border-transparent hover:border-indigo-300'
                                             }`}
                                     >
                                         <img src={img.url} alt="mini" className="w-full h-full object-cover" />
@@ -205,3 +205,5 @@ export const ImageCreatorTab: React.FC = () => {
         </div>
     );
 };
+
+export default ImageCreatorTab;
