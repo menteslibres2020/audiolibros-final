@@ -36,9 +36,18 @@ export class ImageGeminiService {
 
       // DO NOT NEST inside imageGenerationConfig for this specific SDK version/model combination if it fails.
       // We will try the standard 'generationConfig' structure expected by the API.
+      // ESTRATEGIA "TOTAL SATURATION":
+      // Enviamos el parámetro en todas las ubicaciones posibles conocidas para la API de Gemini/Imagen.
+      // Esto fuerza al modelo a reconocer la configuración de canvas rectangular y evitar el letterboxing.
       const generationConfig = {
+        temperature: 0.4,
         aspectRatio: finalRatio,
+        aspect_ratio: finalRatio, // Snake_case para compatibilidad REST raw
         numberOfImages: 1,
+        imageGenerationConfig: {
+          aspectRatio: finalRatio,
+          numberOfImages: 1
+        }
       };
 
       const response = await ai.models.generateContent({
@@ -57,13 +66,14 @@ export class ImageGeminiService {
                   - NO TEXT, NO LETTERS.
                   - High detail.
                   - Artistic composition.
+                  - FULL CANVAS, NO BORDERS, NO LETTERBOX.
                   
                   --ar ${finalRatio}` // Prompt Engineering Reinforcement
               }
             ]
           }
         ],
-        config: generationConfig, // Try passing directly
+        config: generationConfig,
       } as any);
 
       const candidate = response.candidates?.[0];
