@@ -32,6 +32,16 @@ export class ImageGeminiService {
     const finalRatio = validRatios.includes(aspectRatio) ? aspectRatio : '1:1';
 
     try {
+      console.log(`[GeminiImage] Generating with ratio: ${finalRatio}`);
+
+      // DO NOT NEST inside imageGenerationConfig for this specific SDK version/model combination if it fails.
+      // We will try the standard 'generationConfig' structure expected by the API.
+      const generationConfig = {
+        aspectRatio: finalRatio,
+        numberOfImages: 1,
+        responseMimeType: "image/png"
+      };
+
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents: [
@@ -42,21 +52,19 @@ export class ImageGeminiService {
                 text: `TASK: Create a high-quality professional book cover visual.
                   SUBJECT: ${prompt}
                   STYLE: ${visualStyle}
+                  ASPECT_RATIO: ${finalRatio}
                   
                   REQUIREMENTS:
                   - NO TEXT, NO LETTERS.
                   - High detail.
-                  - Artistic composition.`
+                  - Artistic composition.
+                  
+                  --ar ${finalRatio}` // Prompt Engineering Reinforcement
               }
             ]
           }
         ],
-        config: {
-          imageGenerationConfig: {
-            aspectRatio: finalRatio,
-            numberOfImages: 1,
-          },
-        },
+        config: generationConfig, // Try passing directly
       } as any);
 
       const candidate = response.candidates?.[0];
