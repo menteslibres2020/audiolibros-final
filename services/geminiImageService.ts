@@ -39,7 +39,6 @@ export class ImageGeminiService {
       const generationConfig = {
         aspectRatio: finalRatio,
         numberOfImages: 1,
-        responseMimeType: "image/png"
       };
 
       const response = await ai.models.generateContent({
