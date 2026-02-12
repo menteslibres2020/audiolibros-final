@@ -184,24 +184,26 @@ ${chunk}`;
       // Colocamos el formato AL FINAL también, que suele tener más peso en algunos LLMs (recency bias)
       const finalPrompt = `[Image Format: ${ratioDesc}]. ${prompt} --ar ${aspectRatio.replace(':', ':')}`;
 
-      // INVESTIGACIÓN: Intentamos pasar el parámetro de aspect ratio en generationConfig
-      // Aunque el SDK de Node no lo tipe, la API REST de Gemini a veces lo acepta en 'generationConfig' o 'imageGenerationConfig'
-      // Si falla con 400, el catch lo manejará (pero este modelo debería ser robusto).
-      const generationConfig: any = {
-        temperature: 0.4, // Menor temperatura para mayor fidelidad a la instrucción de formato
-      };
+      // INVESTIGACIÓN Y CORRECCIÓN:
+      // La API de Gemini 2.5 Flash Image (Imagen 3) requiere una estructura específica para la configuración de imagen.
+      // Basado en Google AI Studio y documentación, el parámetro 'aspectRatio' debe ir anidado correctamente.
 
-      // Intento de inyección de parámetros no documentados pero posibles en la familia Flash
-      if (aspectRatio !== '1:1') {
-        generationConfig.aspectRatio = aspectRatio;
-      }
+      const imageConfig = {
+        aspectRatio: aspectRatio,
+        numberOfImages: 1,
+        // includeRaiReasoning: true, // Opcional, para debugging de seguridad
+        // outputMimeType: "image/png"
+      };
 
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents: {
           parts: [{ text: finalPrompt }]
         },
-        config: generationConfig
+        config: {
+          // @ts-ignore - La definición de tipos del SDK puede estar desactualizada para este modelo específico
+          imageGenerationConfig: imageConfig
+        }
       } as any);
 
       const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);

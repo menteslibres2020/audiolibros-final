@@ -10,7 +10,9 @@ export default defineConfig(({ mode }) => {
   return {
     base: './',
     define: {
-      'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(apiKey)
+      'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(apiKey),
+      'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
     },
     server: {
       port: 3000,
@@ -25,10 +27,6 @@ export default defineConfig(({ mode }) => {
       }
     },
     plugins: [react()],
-    define: {
-      'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
