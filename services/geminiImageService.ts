@@ -34,21 +34,13 @@ export class ImageGeminiService {
     try {
       console.log(`[GeminiImage] Generating with ratio: ${finalRatio}`);
 
-      // DO NOT NEST inside imageGenerationConfig for this specific SDK version/model combination if it fails.
-      // We will try the standard 'generationConfig' structure expected by the API.
-      // ESTRATEGIA "TOTAL SATURATION":
-      // Enviamos el parámetro en todas las ubicaciones posibles conocidas para la API de Gemini/Imagen.
-      // Esto fuerza al modelo a reconocer la configuración de canvas rectangular y evitar el letterboxing.
-      const generationConfig = {
-        temperature: 0.4,
+      // ESTRATEGIA: Configuracion limpia y directa
+      // Usamos un objeto simple casteado a any para evitar errores de tipo en el build
+      // y lo pasamos a las propiedades clave que el SDK podria usar.
+      const imageConfig = {
         aspectRatio: finalRatio,
-        aspect_ratio: finalRatio, // Snake_case para compatibilidad REST raw
         numberOfImages: 1,
-        imageGenerationConfig: {
-          aspectRatio: finalRatio,
-          numberOfImages: 1
-        }
-      };
+      } as any;
 
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
@@ -68,12 +60,14 @@ export class ImageGeminiService {
                   - Artistic composition.
                   - FULL CANVAS, NO BORDERS, NO LETTERBOX.
                   
-                  --ar ${finalRatio}` // Prompt Engineering Reinforcement
+                  --ar ${finalRatio}`
               }
             ]
           }
         ],
-        config: generationConfig,
+        // Probamos ambas llaves por si el SDK prefiere una
+        config: imageConfig,
+        generationConfig: imageConfig,
       } as any);
 
       const candidate = response.candidates?.[0];
